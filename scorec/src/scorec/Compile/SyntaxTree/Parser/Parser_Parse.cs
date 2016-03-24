@@ -65,12 +65,13 @@ namespace ScoreC.Compile.SyntaxTree
             Debug.Assert(!IsEndOfSource, "No Tokens!! Called at end of source!");
 #endif
 
+            // This control flow is sad, plz help
+
             switch (Current.Kind)
             {
             case TokenKind.Keyword:
                 switch (Current.Keyword)
                 {
-                // This control flow is sad, plz help
                 case Keyword.Extern:
                     bool is_extern = true;
                     Advance();
