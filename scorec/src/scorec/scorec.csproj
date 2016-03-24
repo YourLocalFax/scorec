@@ -108,6 +108,7 @@
     <Compile Include="Compile\SyntaxTree\Ast\Ast.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\Node.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeBlock.cs" />
+    <Compile Include="Compile\SyntaxTree\Ast\NodeAutoCast.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeExplicitCast.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeExpression.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeBoolLiteral.cs" />

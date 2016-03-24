@@ -124,6 +124,15 @@ namespace ScoreC.Compile.SyntaxTree
                 Advance();
                 result = new NodeBoolLiteral(tkBoolLiteral);
             }
+            else if (Check(Keyword.Auto))
+            {
+                var start = Current.Span;
+                Advance();
+                var target = ParsePrimaryExpression(out handleFailureMessage);
+                if (target == null)
+                    return null;
+                return new NodeAutoCast(start, target);
+            }
             else
             {
                 switch (Current.Kind)

@@ -6,8 +6,8 @@ namespace ScoreC.Compile.SyntaxTree
 
     class NodeBlock : NodeExpression
     {
-        private Span start;
-        public override Span Start => start;
+        public Span TkOpenCurlyBraceStart;
+        public override Span Start => TkOpenCurlyBraceStart;
 
         public List<Node> Body;
 
@@ -17,9 +17,9 @@ namespace ScoreC.Compile.SyntaxTree
         /// </summary>
         public bool CanBeExpression => Body != null && Body.Count > 0 && Body[Body.Count - 1] is NodeExpression;
 
-        public NodeBlock(Span start, List<Node> body)
+        public NodeBlock(Span tkOpenCurlyBraceStart, List<Node> body)
         {
-            this.start = start;
+            TkOpenCurlyBraceStart = tkOpenCurlyBraceStart;
             Body = body;
         }
 

@@ -4,12 +4,14 @@
 
     class NodeAutoCast : NodeExpression
     {
-        public override Span Start => Target.Start;
+        public Span KwAutoStart;
+        public override Span Start => KwAutoStart;
 
         public NodeExpression Target;
 
-        public NodeAutoCast(NodeExpression target)
+        public NodeAutoCast(Span kwAutoStart, NodeExpression target)
         {
+            KwAutoStart = kwAutoStart;
             Target = target;
         }
 
