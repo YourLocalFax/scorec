@@ -1,0 +1,52 @@
+
+/# math.vec2
+
+use math.mat4
+
+type vec2 {
+   x: r32
+   y: r32
+}
+
+let vec2_zero   const = vec2(0, 0)
+let vec2_one    const = vec2(1, 1)
+let vec2_unit_x const = vec2(1, 0)
+let vec2_unit_y const = vec2(0, 1)
+
+proc distance_squared(v0: ^vec2, v1: ^vec2) = (v1 - v0).length_squared
+proc distance(v0: ^vec2, v1: ^vec2) = sqrt(distance_squared(v0, v1))
+
+proc normalize(v0: vec2) = v0 when len == 0 || len == 1 else v0 * (1 / len)
+   in let len = v0.length
+
+/# `this` is a mutable reference by default
+
+proc -   (this: vec2) = vec2(-this.x, -this.y)
+
+proc +   (this: vec2, that: ^vec2) = vec2(this.x +  that.x, this.y +  that.y)
+proc -   (this: vec2, that: ^vec2) = vec2(this.x -  that.x, this.y -  that.y)
+proc *   (this: vec2, that: ^vec2) = vec2(this.x *  that.x, this.y *  that.y)
+proc *   (this: vec2, that:   r32) = vec2(this.x *  that  , this.y *  that  )
+proc *   (this:  r32, that: ^vec2) = vec2(this   *  that.x, this   *  that.y)
+proc /   (this: vec2, that: ^vec2) = vec2(this.x /  that.x, this.y /  that.y)
+proc /   (this: vec2, that:   r32) = vec2(this.x /  that  , this.y /  that  )
+proc //  (this: vec2, that: ^vec2) = vec2(this.x // that.x, this.y // that.y)
+proc //  (this: vec2, that:   r32) = vec2(this.x // that  , this.y // that  )
+
+proc +=  (this: vec2, that: ^vec2) this.x, this.y +=  that.x, that.y
+proc -=  (this: vec2, that: ^vec2) this.x, this.y -=  that.x, that.y
+proc *=  (this: vec2, that: ^vec2) this.x, this.y *=  that.x, that.y
+proc *=  (this: vec2, that:   r32) this.x, this.y *=  that  , that
+proc /=  (this: vec2, that: ^vec2) this.x, this.y /=  that.x, that.y
+proc /=  (this: vec2, that: ^vec2) this.x, this.y /=  that  , that
+proc //= (this: vec2, that:   r32) this.x, this.y //= that.x, that.y
+proc //= (this: vec2, that:   r32) this.x, this.y //= that  , that
+
+proc ==  (this: vec2, that: ^vec2) = this.x == that.x && this.y == that.y
+proc !=  (this: vec2, that: ^vec2) = this.x != that.x || this.y != that.y
+
+proc length_squared(this: vec2) = this.x ^ 2 + this.y ^ 2
+proc length(this: vec2) = sqrt(this.length_squared)
+
+proc dot(this: vec2, that: ^vec2) = this.x * that.x + this.y * that.y
+

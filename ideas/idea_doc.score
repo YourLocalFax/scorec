@@ -1,0 +1,108 @@
+
+/*
+SCORE BROAD DESIGN
+
+
+
+PROCEDURES/FUNCTIONS/METHODS:
+
+Score will probably distinguish between procedures and functions,
+ but I'm not sure if 'methods' will be distinguished (or how, if they are). 
+
+If the distinction is made, all functions are required to have a return type
+ and all procedures are required to have no return values.
+*/
+
+
+add func |a int, b int| {
+   a + b
+}
+
+say_hello proc |name string| {
+   println "Hello, " name
+}
+
+
+
+/*
+TYPES:
+
+SCORE will definitely provide "structs" called "types".
+
+A type in SCORE only contains data of other types, no methods.
+*/
+
+
+vec2 type {
+   x float
+   y float
+}
+
+
+/*
+There must be a way to create a type, though!
+Score will allow construction of types like so:
+*/
+
+
+new vec2 { x: 0, y: 5 }
+
+
+/*
+Assignment of parameters can be left out by simply not including the curly braces:
+*/
+
+
+new vec2
+
+
+/*
+This, however, is only available if all members of the type have suitable default
+ values or contain default assignments in the type declaration.
+*/
+
+
+vec2 type {
+   x float: 0
+   y float: 0
+}
+
+new vec2
+
+
+/*
+The above will create a new vec2 using the default values of 0 for each member.
+Note that floats will default to 0 anyway, this just shows the syntax.
+
+Now, what if you want to create a type and give it values, but DON'T want to
+ assign a value to every member?
+Well, that means you need constructors!
+*/
+
+
+new vec2 .xy 5
+/# new vec2 { x: 5, y: 5 }
+
+
+/*
+I'm not sure I know how I want to do that yet, so here's some ideas!
+*/
+
+
+/# Shows that this is a constructor and that it's for the vec2 type.
+xy func new vec2 |value float| {
+   new vec2 { x: value, y: value }
+}
+
+/# Declaration is shorter, but more verbose and ugly.
+/# Also would require constructors to be methods on objects,
+/#  meaning they would have to be fully initialized beforehand.
+/# Not a fan of this, but it's an idea...
+xy func |v vec2, value float| {
+   v .x = value
+   v .y = value
+   v
+}
+
+
+

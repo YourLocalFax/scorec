@@ -1,0 +1,30 @@
+
+type string = c8[]
+
+type base_string!(t) {
+   pub readonly unit_count u64
+   pub readonly value t[]
+}
+
+/*
+type base_string!(t) {
+   pub readonly unit_count u64
+   pub readonly value [t]
+}
+
+type string   = base_string!(c8 )
+type string16 = base_string!(c16)
+type string32 = base_string!(c32)
+
+impl base_string!(t) {
+   func :: (other base_string!(t)) base_string!(t) {
+      let new_string_unit_count = this.unit_count + other.unit_count - 1
+      let new_string_value = new [t](new_string_unit_count, t.default)
+
+      slice_copy(this.value, new_string_value, 0, this.unit_count)
+      slice_copy(other.value, new_string_value, this.unit_count, other.unit_count)
+
+      new base_string![t](new_string_unit_count, new_string_value)
+   }
+}
+*/

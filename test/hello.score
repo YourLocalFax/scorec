@@ -1,0 +1,64 @@
+
+/# int puts(char *)
+extern proc puts(*s8) -> s32
+/# int putchar(int)
+extern proc putchar(s32) -> s32
+
+proc write(out: *s8) {
+   puts(out)
+}
+
+proc writeln(out: *s8) {
+   puts(out)
+   putchar('\n')
+}
+
+proc main() = {
+   puts("Hello, world!", 10,)
+}
+
+/* 0x24601 {
+   /# For now, strings are assumed *s8 with NUL terminator.
+   /# Eventually this will be inferred and can be a few other things.
+   /# puts("Hello, world!")
+}  */
+
+/*
+
+/# OLD STUFF WE SHOULD REMEMBER
+
+type c_str = ^i8
+
+extern "C" fn puts |c_str| -> i32
+extern "C" fn putchar |i32| -> i32
+
+fn putln |s: c_str| -> () { puts s }
+
+fn main || -> () {
+}
+
+*/
+
+
+
+/# extern(C) proc puts(s ^s8) s32
+/# extern(C) proc putchar(s32) s32
+
+/*
+
+types we need right now:
+
+builtin
+raw pointer
+procedure
+
+*/
+
+/* valid cases:
+
+proc main() -> () { }
+proc main() { }
+proc main() =
+
+*/
+ 

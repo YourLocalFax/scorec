@@ -1,0 +1,19 @@
+
+{
+    "Versionr" :
+    {
+        "Ignore" :
+        {
+            "Extensions" :
+            [
+                ".vruser"
+            ],
+            "Patterns" :
+            [
+                "\\.svn/",
+                "\\.git/",
+                "\\.hg/"
+            ]
+        }
+    }
+}

@@ -1,0 +1,39 @@
+
+type real_ty = r16 | r32 | r64 | r80 | r128
+
+proc mat_bit(mi: u8, ni: u8, n: u8) = /# TODO
+
+pub struct mat(m: u8, n: u8, flags: b64 = -1)[T of real_ty = r32]
+#generate_body {
+   if m == 0 || m > 8 {
+      /# Error on `m` out of range
+   }
+   if n == 0 || n > 8 {
+      /# Error on `n` out of range
+   }
+
+   var body = string_buffer()
+
+   let indices: s8[]
+   var nonzero_elements = 0
+
+   for mi in 1 .. m {
+      var comma = "    "
+      for ni in 1 .. n {
+         if mask & mat_bit(mi, ni, n) {
+            body ::= format("{}_{}_{}", comma, mi, ni)
+            comma = ", "
+            indices[+] = nonzero_elements
+            nonzero_elements += 1
+         }
+         else indices[+] = -1
+      }
+
+      if comma == ", "
+         body ::= format(": {}\n", nameof(T))
+   }
+
+   
+
+   body.to_string()
+}

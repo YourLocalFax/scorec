@@ -1,0 +1,193 @@
+
+mod sys {
+   mod console {
+      type format_func![t] = |string_buffer, value t| ()
+
+      let out string_buffer /# gets assigned to stdout
+
+      func write |value string| {
+         write_to_buffer out value
+         /# probaby other things
+      }
+
+      func set_format![t] |formatter format_func![t]| {
+         /# Maps the given type to the specified format_func, somehow.
+      }
+   }
+}
+
+type string_buffer {
+   /# is a string buffer
+}
+
+func write_to_buffer |buffer string_buffer, value string| {
+   /# writes the string to the buffer, simple enough.
+}
+
+class f32_format {
+   fractional_precision i32 = 5
+}
+
+type vec2 {
+   x f32
+   y f32
+}
+
+type vec2_format {
+   preamble = "<"
+   postamble = ">"
+   separator = ", "
+   value_format f32_format = default
+}
+
+impl vec2_format {
+   func format |buffer string_buffer, v vec2| {
+      write_to_buffer buffer preamble
+      write_to_buffer buffer (value_format .format v.x)
+      write_to_buffer buffer separator
+      write_to_buffer buffer (value_format .format v.y)
+      write_to_buffer buffer postamble
+   }
+}
+
+let a = new vec2 1 2
+
+sys.console .write "Here is a vec2: "
+vec2_format sys.console.out a
+sys.console .write "\n"
+
+sys.console .set_format![vec2] vec2_format .default
+sys.console .writefln "Here is a vec2: {0}" a
+
+
+
+
+
+
+
+
+
+
+
+/# Constant strings would simply be a statically allocated ^u8,
+/#  where length is a compile-time constant
+
+/# This would be Score's string type,
+/#  interpreted as UTF-8 and null terminated (probably?)
+/# The null-terminator is not included in the byte count.
+type string {
+   byte_count u64
+   value ^c8
+}
+
+impl string {
+   func to_cstring = this .value as ^i8
+}
+
+/# Demonstration function with obvious descriptive name.
+func cstring_length_sans_terminator |cstring ^i8| u64 {
+   var result u64 = 0
+   while *cstring {
+      result+ = 1
+      cstring>> = 1
+   }
+   result
+}
+
+/# To turn a C string into a Score string
+func to_score_string |cstring ^i8| string {
+   var byte_count = cstring_length_sans_terminator cstring
+   new string byte_count (cstring as ^c8)
+}
+
+/# It could be implicit that assigning a string to a ^u8 would "invoke to_cstring"?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+func + |a vec2, b vec2| vec2 = new vec2 (a.x + b.x) (a.y + b.y)
+
+func dot |a vec2, b vec2| f32 = a.x * b.x + a.y * b.y
+
+a + b
+dot a b
+
+
+
+
+
+
+
+
+
+
+type combine |a i32, b i32| i32
+
+
+func write_string_stdout |s ^u8| i32
+
+@if platform == WINDOWS {
+
+   var std_in  i32 lazy = GetStdHandle STD_INPUT_HANDLE
+   var std_out i32 lazy = GetStdHandle STD_OUTPUT_HANDLE
+   var std_err i32 lazy = GetStdHandle STD_ERROR_HANDLE
+
+   let STD_INPUT_HANDLE  i32 = -10
+   let STD_OUTPUT_HANDLE i32 = -11
+   let STD_ERROR_HANDLE  i32 = -12
+
+   func GetStdHandle |std_handle i32| i32 foreign
+   func WriteFile |handle i32, buffer ^u8, buffer_length i32, 
+                   written_result ^i32, overlapped ^u8| i32 foreign
+
+   func write_string_stdout |s ^u8| i32 {
+      var written i32
+      WriteFile std_out s (strlen s) ^written (0 as ^u8)
+   }
+
+}
+
+/# TODO(kai): support config for { leading zeros, caps/lower }
+func print_u64_hex |arg u64| {
+   iter count = 0, 15 {
+      /# A bit ugly, I may play with the syntax.
+      /# Using 'in' keeps the scope less polluted with variables.
+      let c = '0' + digit when digit < 10 el 'A' + digit - 10
+         in let digit = (arg & mask) >> offset in {
+               let mask = 0xF << offset
+               let offset = i * 4
+                  in let i = 15 - count
+            }
+
+      let buffer [2 char] = [ c, 0 ]
+      write_string_stdout buffer
+   }
+}
+
+func print |args ..| {
+   each arg in args {
+      let ty = arg .type
+      /# TODO(kai): Implement things here, dunno how I'm doing types...
+   }
+}
+
+func println |args ..| {
+   print args
+   write_string_stdout b"\n"
+}
+
+
+

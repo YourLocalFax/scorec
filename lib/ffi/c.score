@@ -1,0 +1,9 @@
+
+/# use ffi
+
+/# FOR DEMONSTRATION, THESE AREN'T ALWAYS RIGHT
+type cchar    = i8
+type cwchar_t = i16
+
+type cstring  = ^cchar
+type cwstring = ^cwchar_t
