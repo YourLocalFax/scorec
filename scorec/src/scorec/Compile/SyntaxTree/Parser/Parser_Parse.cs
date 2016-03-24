@@ -411,148 +411,149 @@ namespace ScoreC.Compile.SyntaxTree
             Debug.Assert(!IsEndOfSource, "you're at the end of the source, buddy, stahp.");
 #endif
 
-            switch (Current.Kind)
+            if (Check(OperatorKind.Star))
             {
-            case TokenKind.Identifier:
-                {
-                    // URGENT(kai): Handle qualified typenames. This might include going through builtin types, so consider that!
-                    if (BuiltinTypeInfo.IsValid(Current.Identifier))
-                    {
-                        Advance();
-                        return BuiltinTypeInfo.Get(Previous.Identifier);
-                    }
-                    handleFailureMessage = false;
-                    var message = Message.TypeParseFailed(Current);
-                    Log.AddError(message);
+                var tkStar = Current;
+                Advance();
+                var type = ParseTypeInfo(out handleFailureMessage);
+                if (type == null)
                     return null;
-                }
-            case TokenKind.Operator:
-                if (Check(OperatorKind.Star))
+                return new PointerTypeInfo(tkStar, type);
+            }
+            else
+            {
+                switch (Current.Kind)
                 {
-                    var tkStar = Current;
-                    Advance();
-                    var type = ParseTypeInfo(out handleFailureMessage);
-                    if (type == null)
-                        return null;
-                    return new PointerTypeInfo(tkStar, type);
-                }
-                return null;
-            #region case Tuple or Procedure Type:
-            case TokenKind.OpenBracket:
-                {
-                    var tkOpenBracket = Current;
-                    Advance(); // `(`
-
-                    var names = new List<Token>();
-                    var types = new List<TypeInfo>();
-
-                    // FIXME(kai): !!!!!!!! refactor this to be similar to ParseCommaSeparatedExpressions!!
-
-                    while (!Check(TokenKind.CloseBracket))
+                case TokenKind.Identifier:
                     {
-                        Token tkName;
-                        if (Check(TokenKind.Identifier) && CheckNext(OperatorKind.Colon))
+                        // URGENT(kai): Handle qualified typenames. This might include going through builtin types, so consider that!
+                        if (BuiltinTypeInfo.IsValid(Current.Identifier))
                         {
-                            tkName = Current;
-                            Advance(2);
+                            Advance();
+                            return BuiltinTypeInfo.Get(Previous.Identifier);
                         }
-                        // No name, we'll check for consistency later.
-                        else tkName = null;
-                        names.Add(tkName);
+                        handleFailureMessage = false;
+                        var message = Message.TypeParseFailed(Current);
+                        Log.AddError(message);
+                        return null;
+                    }
+                #region case Tuple or Procedure Type:
+                case TokenKind.OpenBracket:
+                    {
+                        var tkOpenBracket = Current;
+                        Advance(); // `(`
 
-                        var type = ParseTypeInfo(out handleFailureMessage);
-                        if (type == null)
+                        var names = new List<Token>();
+                        var types = new List<TypeInfo>();
+
+                        // FIXME(kai): !!!!!!!! refactor this to be similar to ParseCommaSeparatedExpressions!!
+
+                        while (!Check(TokenKind.CloseBracket))
                         {
-                            types.Add(null);
-                            if (Check(TokenKind.Comma))
+                            Token tkName;
+                            if (Check(TokenKind.Identifier) && CheckNext(OperatorKind.Colon))
                             {
-                                var message = Message.MissingType(Current.Span,
-                                    "Expected a type in tuple or procedure type, found a comma.");
-                                Log.AddError(message);
-                                // NOTE(kai): continue on to parse out the comma
+                                tkName = Current;
+                                Advance(2);
                             }
-                            else if (CheckNext(TokenKind.Comma))
+                            // No name, we'll check for consistency later.
+                            else tkName = null;
+                            names.Add(tkName);
+
+                            var type = ParseTypeInfo(out handleFailureMessage);
+                            if (type == null)
                             {
-                                var message = Message.MissingType(Current.Span,
-                                    string.Format("Expected a type in tuple or procedure type, found a `{0}`.", Current.Image));
-                                Log.AddError(message);
-                                Advance();
-                                // NOTE(kai): continue on to parse out the comma
+                                types.Add(null);
+                                if (Check(TokenKind.Comma))
+                                {
+                                    var message = Message.MissingType(Current.Span,
+                                        "Expected a type in tuple or procedure type, found a comma.");
+                                    Log.AddError(message);
+                                    // NOTE(kai): continue on to parse out the comma
+                                }
+                                else if (CheckNext(TokenKind.Comma))
+                                {
+                                    var message = Message.MissingType(Current.Span,
+                                        string.Format("Expected a type in tuple or procedure type, found a `{0}`.", Current.Image));
+                                    Log.AddError(message);
+                                    Advance();
+                                    // NOTE(kai): continue on to parse out the comma
+                                }
+                                else
+                                {
+                                    handleFailureMessage = false;
+                                    var message = Message.TypeParseFailed(Current);
+                                    Log.AddError(message);
+                                    return null;
+                                }
                             }
-                            else
+                            types.Add(type);
+
+                            // If we hit a `)` then we can stop looping
+                            if (Check(TokenKind.CloseBracket))
+                                break;
+                            // Otherwise we expect to keep going, need a comma.
+                            else if (!Expect(TokenKind.Comma))
                             {
-                                handleFailureMessage = false;
-                                var message = Message.TypeParseFailed(Current);
+                                // TODO(kai): Check options here for better recovery/errors.
+                                var message = Message.TypeParseFailed(IsEndOfSource ? Current : tkOpenBracket);
                                 Log.AddError(message);
                                 return null;
                             }
                         }
-                        types.Add(type);
 
-                        // If we hit a `)` then we can stop looping
-                        if (Check(TokenKind.CloseBracket))
-                            break;
-                        // Otherwise we expect to keep going, need a comma.
-                        else if (!Expect(TokenKind.Comma))
+                        var tkCloseBracket = Current;
+                        if (!Expect(TokenKind.CloseBracket))
                         {
-                            // TODO(kai): Check options here for better recovery/errors.
-                            var message = Message.TypeParseFailed(IsEndOfSource ? Current : tkOpenBracket);
+                            var message = Message.TypeParseFailed(tkOpenBracket.Span,
+                                "Missing `(` to match opening `)` in tuple or procedure type.");
                             Log.AddError(message);
                             return null;
                         }
-                    }
 
-                    var tkCloseBracket = Current;
-                    if (!Expect(TokenKind.CloseBracket))
-                    {
-                        var message = Message.TypeParseFailed(tkOpenBracket.Span,
-                            "Missing `(` to match opening `)` in tuple or procedure type.");
-                        Log.AddError(message);
-                        return null;
-                    }
+                        // FIXME(kai): check that the type either always or never defines names.
+                        var parameters = new List<ProcedureTypeInfo.Parameter>();
+                        var count = types.Count;
+                        for (int i = 0; i < count; i++)
+                            parameters.Add(new ProcedureTypeInfo.Parameter(names[i]?.Identifier ?? null, types[i]));
 
-                    // FIXME(kai): check that the type either always or never defines names.
-                    var parameters = new List<ProcedureTypeInfo.Parameter>();
-                    var count = types.Count;
-                    for (int i = 0; i < count; i++)
-                        parameters.Add(new ProcedureTypeInfo.Parameter(names[i]?.Identifier ?? null, types[i]));
-
-                    // Is this actually a procedure type?
-                    if (Check(OperatorKind.MinusGreater))
-                    {
-                        var tkArrow = Current;
-                        Advance(); // `->`
-                        // TODO(kai): eventually named returns will be a thing, check those here.
-                        var returnType = ParseTypeInfo(out handleFailureMessage);
-                        if (returnType == null)
+                        // Is this actually a procedure type?
+                        if (Check(OperatorKind.MinusGreater))
                         {
-                            if (handleFailureMessage)
+                            var tkArrow = Current;
+                            Advance(); // `->`
+                                       // TODO(kai): eventually named returns will be a thing, check those here.
+                            var returnType = ParseTypeInfo(out handleFailureMessage);
+                            if (returnType == null)
                             {
-                                handleFailureMessage = false;
-                                var message = Message.MissingType(tkArrow.Span,
-                                    "Procedure type is missing a return type.");
-                                Log.AddError(message);
+                                if (handleFailureMessage)
+                                {
+                                    handleFailureMessage = false;
+                                    var message = Message.MissingType(tkArrow.Span,
+                                        "Procedure type is missing a return type.");
+                                    Log.AddError(message);
+                                }
+                                return null;
                             }
-                            return null;
+
+                            // TODO(kai): support multiple return values
+
+                            var returns = new List<ProcedureTypeInfo.Parameter>();
+                            returns.Add(new ProcedureTypeInfo.Parameter(null, returnType));
+
+                            return new ProcedureTypeInfo(tkOpenBracket, tkCloseBracket, tkArrow, parameters, returns);
                         }
+                        else
+                        {
+                            // FIXME(kai): when we implement tuples fix this up.
+                            var returns = new List<ProcedureTypeInfo.Parameter>();
+                            returns.Add(new ProcedureTypeInfo.Parameter(null, BuiltinTypeInfo.Get(BuiltinType.VOID)));
 
-                        // TODO(kai): support multiple return values
-
-                        var returns = new List<ProcedureTypeInfo.Parameter>();
-                        returns.Add(new ProcedureTypeInfo.Parameter(null, returnType));
-
-                        return new ProcedureTypeInfo(tkOpenBracket, tkCloseBracket, tkArrow, parameters, returns);
+                            return new ProcedureTypeInfo(tkOpenBracket, tkCloseBracket, null, parameters, returns);
+                        }
                     }
-                    else
-                    {
-                        // FIXME(kai): when we implement tuples fix this up.
-                        var returns = new List<ProcedureTypeInfo.Parameter>();
-                        returns.Add(new ProcedureTypeInfo.Parameter(null, BuiltinTypeInfo.Get(BuiltinType.VOID)));
-
-                        return new ProcedureTypeInfo(tkOpenBracket, tkCloseBracket, null, parameters, returns);
-                    }
+                    #endregion
                 }
-                #endregion
             }
 
             return null;
