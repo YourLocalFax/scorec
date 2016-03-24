@@ -103,6 +103,12 @@ namespace ScoreC.Compile.SyntaxTree
             return ParsePrimaryExpression(out handleFailureMessage);
         }
 
+        /// <summary>
+        /// Attempts to parse the lowest level of expressions, including suffixes that attach to them.
+        /// If any errors are encountered, this returns null.
+        /// </summary>
+        /// <param name="handleFailureMessage"></param>
+        /// <returns></returns>
         private NodeExpression ParsePrimaryExpression(out bool handleFailureMessage)
         {
             handleFailureMessage = true;
@@ -147,7 +153,7 @@ namespace ScoreC.Compile.SyntaxTree
                     result = new NodeIdentifier(tkIdentifier);
                     break;
                 case TokenKind.OpenCurlyBracket:
-                    var tkOpen = Current;
+                    var start = Current.Span;
                     Advance(); // `{`
 
                     // var success = true;
@@ -163,6 +169,7 @@ namespace ScoreC.Compile.SyntaxTree
 
                     if (!Check(TokenKind.CloseCurlyBracket))
                     {
+                        handleFailureMessage = false;
                         if (IsEndOfSource)
                         {
                             var message = Message.UnexpectedEndOfSource(Previous.Span,
@@ -175,13 +182,12 @@ namespace ScoreC.Compile.SyntaxTree
                                 Current.Image, "`}`", "to close block expression");
                             Log.AddError(message);
                         }
-                        return result;
+                        return null;
                     }
 
-                    var tkClose = Current;
                     Advance(); // `}`
 
-                    result = new NodeBlock(tkOpen, tkClose, body);
+                    result = new NodeBlock(start, body);
                     break;
                 default:
                     {
@@ -201,9 +207,22 @@ namespace ScoreC.Compile.SyntaxTree
             return result;
         }
 
-        private List<NodeExpression> ParseCommaSeparatedList(bool allowTrailingComma, TokenKind closeDelimiter, out Token tkCloseDelimiter, out bool handleFailureMessage)
+        /// <summary>
+        /// Attempts to parse a comma-separated list of expressions.
+        /// This allows for an optional trailing comma and expects
+        ///  to be stopped by a delimiter.
+        /// 
+        /// If any errors are encountered, an empty list is returned.
+        /// 
+        /// FIXME(kai): If I do multi-assignments then I'll need to remove
+        ///  the requirement for a delimiter, I need to make it an option.
+        /// </summary>
+        /// <param name="allowTrailingComma"></param>
+        /// <param name="closeDelimiter"></param>
+        /// <param name="handleFailureMessage"></param>
+        /// <returns></returns>
+        private List<NodeExpression> ParseCommaSeparatedExpressions(bool allowTrailingComma, TokenKind closeDelimiter, out bool handleFailureMessage)
         {
-            tkCloseDelimiter = null;
             handleFailureMessage = true;
 
             var closeDelimiterImage = "???";
@@ -252,7 +271,7 @@ namespace ScoreC.Compile.SyntaxTree
                         var message = Message.UnexpectedToken(Previous.Span,
                             string.Format("Unexpected `,` found before closing delimiter `{0}`.", closeDelimiterImage));
                         Log.AddError(message);
-                        return null;
+                        return new List<NodeExpression>();
                     }
                     // This is implicit, but keep it here anyway for clarity.
                     else continue;
@@ -278,7 +297,7 @@ namespace ScoreC.Compile.SyntaxTree
                                 Current.Image, "`)`");
                             Log.AddError(message);
                         }
-                        return null;
+                        return new List<NodeExpression>();
                     }
                 }
             }
@@ -298,9 +317,8 @@ namespace ScoreC.Compile.SyntaxTree
                         Current.Image, "`)`", "to close argument list");
                     Log.AddError(message);
                 }
-                return null;
+                return new List<NodeExpression>();
             }
-            else tkCloseDelimiter = Previous;
 
             return result;
         }
@@ -331,7 +349,7 @@ namespace ScoreC.Compile.SyntaxTree
                     result = null;
                     return;
                 }
-                //result = new NodeExplicitCast(result, typeInfo);
+                result = new NodeExplicitCast(result, typeInfo);
                 return;
             }
 
@@ -339,25 +357,24 @@ namespace ScoreC.Compile.SyntaxTree
             {
             case TokenKind.OpenBracket:
                 {
-                    var tkOpenBracket = Current;
                     Advance();
 
-                    Token tkCloseBracket;
-                    var argumentList = ParseCommaSeparatedList(false, TokenKind.CloseBracket, out tkCloseBracket, out handleFailureMessage);
+                    var argumentList = ParseCommaSeparatedExpressions(false, TokenKind.CloseBracket, out handleFailureMessage);
 
                     if (argumentList == null)
                         result = null;
-                    else result = new NodeInvocation(tkOpenBracket, tkCloseBracket, result, argumentList);
+                    else result = new NodeInvocation(result, argumentList);
                     return;
                 }
             case TokenKind.Dot:
                 {
-                    var tkDot = Current;
                     // TODO(kai): .type
                     Advance(); //  `.`
-                    var tkIdent = IsEndOfSource ? null : Current;
                     if (Check(TokenKind.Identifier))
-                        result = new NodeFieldIndex(tkDot, result, tkIdent);
+                    {
+                        result = new NodeFieldIndex(result, Current);
+                        Advance();
+                    }
                     else
                     {
                         handleFailureMessage = false;
@@ -371,6 +388,12 @@ namespace ScoreC.Compile.SyntaxTree
         }
         #endregion
 
+        /// <summary>
+        /// Attempts to parse a type reference.
+        /// If any errors are encountered, this returns null.
+        /// </summary>
+        /// <param name="handleFailureMessage"></param>
+        /// <returns></returns>
         private TypeInfo ParseTypeInfo(out bool handleFailureMessage)
         {
             handleFailureMessage = true;
@@ -412,6 +435,8 @@ namespace ScoreC.Compile.SyntaxTree
 
                     var names = new List<Token>();
                     var types = new List<TypeInfo>();
+
+                    // FIXME(kai): !!!!!!!! refactor this to be similar to ParseCommaSeparatedExpressions!!
 
                     while (!Check(TokenKind.CloseBracket))
                     {
@@ -540,8 +565,21 @@ namespace ScoreC.Compile.SyntaxTree
             return type as ProcedureTypeInfo;
         }
 
+        /// <summary>
+        /// Attempts to parse a procedure declaration + optional body,
+        ///  depending on what modifiers exist.
+        /// If any errors are encountered, this returns null.
+        /// </summary>
+        /// <param name="isExtern"></param>
+        /// <param name="handleFailureMessage"></param>
+        /// <returns></returns>
         private NodeProcedureDeclaration ParseProcedureDeclaration(bool isExtern, out bool handleFailureMessage)
         {
+            // FIXME(kai): remove isExtern, replace with a Modifiers list or class, idunno.
+
+            // NOTE(kai): this is only used where the parser think it can continue
+            var errored = false;
+
             handleFailureMessage = true;
 #if DEBUG
             Debug.Assert(Check(Keyword.Proc), "Expected `proc` to start procedure declaration.");
@@ -573,6 +611,8 @@ namespace ScoreC.Compile.SyntaxTree
                 // TODO(kai): other special cases for procedures without a name, make the compiler smarter!
                 else
                 {
+                    errored = true;
+
                     // TODO(kai): Check if this token is a modifier that procedures accept. If it is, we can give better errors!
 
                     // If the token AFTER this is NOT an open bracket ( then we should just
@@ -628,9 +668,20 @@ namespace ScoreC.Compile.SyntaxTree
                     return null;
             }
 
+            if (errored)
+                return null;
+
             return new NodeProcedureDeclaration(kwProc, tkName, procType, procBody);
         }
 
+        /// <summary>
+        /// Attempts to parse a procedure body.
+        /// If any errors are encountered, this returns null.
+        /// </summary>
+        /// <param name="kwProc"></param>
+        /// <param name="tkName"></param>
+        /// <param name="handleFailureMessage"></param>
+        /// <returns></returns>
         private ProcedureBody ParseProcedureBody(Token kwProc, Token tkName, out bool handleFailureMessage)
         {
             handleFailureMessage = true;
@@ -646,9 +697,9 @@ namespace ScoreC.Compile.SyntaxTree
                 // TODO(kai): I can shorten this to `if (!(body as NodeBlock)?.CanBeExpression ?? false)`
                 if (body is NodeBlock && !(body as NodeBlock).CanBeExpression)
                 {
-
+                    // FIXME(kai): should this be a parse-time check for expression-ness? might be nice..
                 }
-                return new ProcedureBody(tkEqual, body);
+                return new ProcedureBody(body);
             }
             // If no `=`, check for `{`:
             else if (Check(TokenKind.OpenCurlyBracket))
@@ -657,7 +708,7 @@ namespace ScoreC.Compile.SyntaxTree
                 var body = ParseExpression(out handleFailureMessage);
                 if (body == null)
                     return null;
-                return new ProcedureBody(null, body);
+                return new ProcedureBody(body);
             }
             // Otherwise we messed up D:
             else

@@ -6,16 +6,13 @@
     {
         public override Span Start => Target.Start;
 
-        public Token TkDot;
-
         public NodeExpression Target;
         public Token TkFieldNameIdentifier;
 
         public string FieldName => TkFieldNameIdentifier.Identifier;
 
-        public NodeFieldIndex(Token tkDot, NodeExpression target, Token tkFieldNameIdentifier)
+        public NodeFieldIndex(NodeExpression target, Token tkFieldNameIdentifier)
         {
-            TkDot = tkDot;
             Target = target;
             TkFieldNameIdentifier = tkFieldNameIdentifier;
         }

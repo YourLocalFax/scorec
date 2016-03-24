@@ -17,5 +17,6 @@
         void Visit(NodeIdentifier node);
         void Visit(NodeFieldIndex node);
         void Visit(NodeInvocation node);
+        void Visit(NodeExplicitCast node);
     }
 }
