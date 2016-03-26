@@ -82,6 +82,10 @@ namespace ScoreC.Compile.SyntaxTree
                 in_keyword_proc:
                     return ParseProcedureDeclaration(is_extern, out handleFailureMessage);
 
+                case Keyword.Let:
+                case Keyword.Var:
+                    return ParseBindingDeclaration(out handleFailureMessage);
+
                 default: goto in_default;
                 }
 
@@ -579,6 +583,17 @@ namespace ScoreC.Compile.SyntaxTree
                 return null;
             }
             return type as ProcedureTypeInfo;
+        }
+
+        private NodeBindingDeclaration ParseBindingDeclaration(out bool handleFailureMessage)
+        {
+            handleFailureMessage = true;
+#if DEBUG
+            Debug.Assert(Check(Keyword.Let) || Check(Keyword.Var), "Expected `let` or `var` to start binding declaration.");
+#endif
+
+            var start = Current.Span;
+            var bindingKind = Current.Keyword;
         }
 
         /// <summary>
