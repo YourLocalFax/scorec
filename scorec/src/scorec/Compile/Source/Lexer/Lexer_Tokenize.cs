@@ -58,9 +58,9 @@ namespace ScoreC.Compile.Source
             return tokens;
         }
 
-        private Token GetToken(Span start, out bool failed)
+        private Token GetToken(Span start, out bool handleFailureMessage)
         {
-            failed = false;
+            handleFailureMessage = true;
 #if DEBUG
             Debug.Assert(!IsEndOfSource, "No Tokens!! Called at end of source!");
 #endif
@@ -73,7 +73,7 @@ namespace ScoreC.Compile.Source
                 EatWhiteSpace();
                 if (IsEndOfSource)
                     return null;
-                return GetToken(GetSpan(), out failed);
+                return GetToken(GetSpan(), out handleFailureMessage);
             }
 
             if (Matches("..."))
@@ -107,19 +107,19 @@ namespace ScoreC.Compile.Source
 
             switch (Current)
             {
-                case '(': case ')':
-                case '[': case ']':
-                case '{': case '}':
-                case ',':
+            case '(': case ')':
+            case '[': case ']':
+            case '{': case '}':
+            case ',':
                     Advance();
                     return Token.NewDelimiter(start, Previous);
-                case '`':  return GetStringLiteral(start, '`', true);
-                case '"':  return GetStringLiteral(start, '"');
-                case '\'': return GetCharacterLiteral(start);
-                default: break;
+            case '`':  return GetStringLiteral(start, '`', true, out handleFailureMessage);
+            case '"':  return GetStringLiteral(start, '"', false, out handleFailureMessage);
+            case '#': return GetDirective(start, out handleFailureMessage);
+            default: break;
             }
 
-            failed = true;
+            handleFailureMessage = true;
             Advance(); // Skip this token since we failed on it.
             return null;
         }
@@ -148,8 +148,9 @@ namespace ScoreC.Compile.Source
             else return Token.NewIdentifier(GetSpan(start), image);
         }
 
-        private Token GetStringLiteral(Span start, char delimiter, bool isVerbatim = false)
+        private Token GetStringLiteral(Span start, char delimiter, bool isVerbatim, out bool handleFailureMessage)
         {
+            handleFailureMessage = true;
 #if DEBUG
             Debug.Assert(!IsEndOfSource, "No characters left to be a string literal!");
             Debug.Assert(Current == delimiter, "Missing open quote for string literal!");
@@ -184,6 +185,7 @@ namespace ScoreC.Compile.Source
                         Bump();
                     else
                     {
+                        handleFailureMessage = false;
                         var message = Message.UnfinishedLiteral(start, "string");
                         Log.AddError(message);
                         return null;
@@ -194,6 +196,7 @@ namespace ScoreC.Compile.Source
 
             if (IsEndOfSource)
             {
+                handleFailureMessage = false;
                 var message = Message.UnexpectedEndOfSource(GetSpan(start), "Unfinished string literal, found end of source.");
                 Log.AddError(message);
                 return null;
@@ -201,6 +204,7 @@ namespace ScoreC.Compile.Source
 
             if (!Expect(delimiter)) // close delimiter
             {
+                handleFailureMessage = false;
                 var message = Message.UnfinishedLiteral(start, "string");
                 Log.AddError(message);
                 return null;
@@ -211,58 +215,6 @@ namespace ScoreC.Compile.Source
             var image = Map.GetSourceAtSpan(span);
 
             return Token.NewStringLiteral(span, literal, image);
-        }
-
-        private Token GetCharacterLiteral(Span start)
-        {
-#if DEBUG
-            Debug.Assert(!IsEndOfSource, "No characters left to be a character literal!");
-            Debug.Assert(Current == '\'', "Missing open quote for character literal!");
-#endif
-            Advance(); // open '
-
-            if (IsEndOfSource)
-            {
-                var message = Message.UnexpectedEndOfSource(GetSpan(start), "Unfinished character literal, found end of source.");
-                Log.AddError(message);
-                return null;
-            }
-
-            uint value;
-
-            if (Current == '\\')
-            {
-                var escaped = GetEscapedCharacter();
-                if (!escaped.HasValue)
-                    // NOTE(kai): GetEscapedCharacters will log errors if it fails, so don't do that here.
-                    value = 0;
-                else value = escaped.Value;
-            }
-            else
-            {
-                value = Current;
-                Advance();
-            }
-
-            if (IsEndOfSource)
-            {
-                var message = Message.UnexpectedEndOfSource(GetSpan(start), "Unfinished character literal, found end of source.");
-                Log.AddError(message);
-                return null;
-            }
-
-
-            if (!Expect('\'')) // close '
-            {
-                var message = Message.UnfinishedLiteral(start, "character");
-                Log.AddError(message);
-                return null;
-            }
-
-            var span = GetSpan(start);
-            var image = Map.GetSourceAtSpan(span);
-
-            return Token.NewCharacterLiteral(span, value, image);
         }
 
         private char? GetEscapedCharacter()
@@ -278,23 +230,47 @@ namespace ScoreC.Compile.Source
 
             switch (Current)
             {
-                case 'a':  Advance(); return '\a';
-                case 'b':  Advance(); return '\b';
-                case 'f':  Advance(); return '\f';
-                case 'n':  Advance(); return '\n';
-                case 'r':  Advance(); return '\r';
-                case 't':  Advance(); return '\t';
-                case 'v':  Advance(); return '\v';
-                case '0':  Advance(); return '\0';      
-                case '\'': Advance(); return '\'';
-                case '"':  Advance(); return '"' ;
-                case '\\': Advance(); return '\\';
-                // URGENT(kai): Include octal/hexadecimal escapes.
-                // These escapes can log errors.
-                default:
-                    Advance();
-                    return Current;
+            case 'a':  Advance(); return '\a';
+            case 'b':  Advance(); return '\b';
+            case 'f':  Advance(); return '\f';
+            case 'n':  Advance(); return '\n';
+            case 'r':  Advance(); return '\r';
+            case 't':  Advance(); return '\t';
+            case 'v':  Advance(); return '\v';
+            case '0':  Advance(); return '\0';      
+            case '\'': Advance(); return '\'';
+            case '"':  Advance(); return '"' ;
+            case '\\': Advance(); return '\\';
+            // URGENT(kai): Include octal/hexadecimal escapes.
+            // These escapes can log errors.
+            default:
+                Advance();
+                return Current;
             }
+        }
+
+        private Token GetDirective(Span start, out bool handleFailureMessage)
+        {
+            handleFailureMessage = true;
+#if DEBUG
+            Debug.Assert(!IsEndOfSource, "Not enough characters exist to start a directive!");
+            Debug.Assert(Current == '#', "Current character '" + Current + "' is not a `#`.");
+#endif
+
+            Advance(); // `#`
+            if (IsEndOfSource)
+            {
+                handleFailureMessage = false;
+                var message = Message.UnexpectedEndOfSource(start, "Expected identifier for directive name, found end of source.");
+                Log.AddError(message);
+                return null;
+            }
+
+            var name = GetIdentifierOrKeyword();
+            // Keywords can technically be directives, though they probably wont.
+            var directive = name.Image;
+
+            return Token.NewDirective(GetSpan(start), directive);
         }
 
         // URGENT(kai): refactor this plz, pretty ugly

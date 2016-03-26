@@ -88,14 +88,6 @@ namespace ScoreC.Compile.Source
             return result;
         }
 
-        public static Token NewCharacterLiteral(Span span, uint literal, string image)
-        {
-            var result = new Token(span, TokenKind.String);
-            result.CharacterLiteral = literal;
-            result.Image = image;
-            return result;
-        }
-
         public static Token NewIntegerLiteral(Span span, string literal, int radix, string image)
         {
             var result = new Token(span, TokenKind.Integer);
@@ -110,6 +102,14 @@ namespace ScoreC.Compile.Source
             var result = new Token(span, TokenKind.Real);
             result.NumericLiteral = literal;
             result.Image = image;
+            return result;
+        }
+
+        public static Token NewDirective(Span span, string directive)
+        {
+            var result = new Token(span, TokenKind.Directive);
+            result.Directive = directive;
+            result.Image = "#" + directive;
             return result;
         }
         #endregion
@@ -165,15 +165,15 @@ namespace ScoreC.Compile.Source
         /// </summary>
         public int IntegerRadix { get; private set; } = 10;
         /// <summary>
-        /// The character value this Token represents.
-        /// This will be 0 if this Token does not represent a character literal.
-        /// </summary>
-        public uint CharacterLiteral { get; private set; } = 0;
-        /// <summary>
         /// The string value this Token represents.
         /// This will be an empty string if this Token does not represent a string literal.
         /// </summary>
         public string StringLiteral { get; private set; } = "";
+        /// <summary>
+        /// The name of the directive this Token represents.
+        /// This will be an empty string if this Token does not represent a directive.
+        /// </summary>
+        public string Directive { get; private set; } = "";
         #endregion
 
         #region Token Types Checks

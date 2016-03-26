@@ -83,6 +83,9 @@ namespace ScoreC.Compile.SyntaxTree
 
         private bool Check(OperatorKind operatorKind) =>
             !IsEndOfSource && Current.OperatorKind == operatorKind;
+
+        private bool CheckDirective(string directive) =>
+            !IsEndOfSource && Current.Kind == TokenKind.Directive && Current.Directive == directive;
         #endregion
 
         #region bool CheckNext(kind)

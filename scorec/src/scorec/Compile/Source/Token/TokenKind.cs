@@ -21,9 +21,9 @@
 
         Integer,
         Real,
-        Char,
         String,
 
         Operator,
+        Directive,
     }
 }

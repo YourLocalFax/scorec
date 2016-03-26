@@ -133,6 +133,16 @@ namespace ScoreC.Compile.SyntaxTree
                     return null;
                 return new NodeAutoCast(start, target);
             }
+            else if (CheckDirective("char"))
+            {
+                var start = Current.Span;
+                Advance(); // `#char`
+                string literal = null;
+                var literalBytes = Encoding.Unicode.GetBytes(literal);
+                //var charCount = Encoding.Unicode.GetCharCount();
+                var utf32 = Encoding.Convert(Encoding.Default, Encoding.UTF32, literalBytes);
+                // result = new NodeCharLiteral(tkCharLiteral);
+            }
             else
             {
                 switch (Current.Kind)
@@ -146,11 +156,6 @@ namespace ScoreC.Compile.SyntaxTree
                     var tkRealLiteral = Current;
                     Advance();
                     result = new NodeRealLiteral(tkRealLiteral);
-                    break;
-                case TokenKind.Char:
-                    var tkCharLiteral = Current;
-                    Advance();
-                    result = new NodeCharLiteral(tkCharLiteral);
                     break;
                 case TokenKind.String:
                     var tkStringLiteral = Current;

@@ -4,18 +4,15 @@
 
     class NodeCharLiteral : NodeExpression
     {
-        public override Span Start => TkLiteral.Span;
+        private Span start;
+        public override Span Start => start;
 
-        /// <summary>
-        /// The integer literal token.
-        /// </summary>
-        public Token TkLiteral;
+        public uint Literal;
 
-        public uint Literal => TkLiteral.CharacterLiteral;
-
-        public NodeCharLiteral(Token tkLiteral)
+        public NodeCharLiteral(Span start, uint literal)
         {
-            TkLiteral = tkLiteral;
+            this.start = start;
+            Literal = literal;
         }
 
         public override void Accept(IAstVisitor visitor) => visitor.Visit(this);

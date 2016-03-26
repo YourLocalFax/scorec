@@ -3,6 +3,7 @@
     interface IAstVisitor
     {
         void Visit(NodeProcedureDeclaration node);
+        void Visit(NodeBindingDeclaration node);
         void Visit(NodeBlock node);
 
         #region Literals
