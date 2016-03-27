@@ -2,7 +2,7 @@
 {
     using Source;
 
-    class NodeBindingDeclaration : NodeExpression
+    class NodeBindingDeclaration : Node
     {
         private Span start;
         public override Span Start => start;
