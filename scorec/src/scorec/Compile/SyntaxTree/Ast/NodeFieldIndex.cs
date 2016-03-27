@@ -4,6 +4,8 @@
 
     class NodeFieldIndex : NodeExpression
     {
+        public override bool IsLValue => true;
+
         public override Span Start => Target.Start;
 
         public NodeExpression Target;

@@ -4,6 +4,8 @@
 
     class NodeIdentifier : NodeExpression
     {
+        public override bool IsLValue => true;
+
         public override Span Start => TkIdentifier.Span;
 
         public Token TkIdentifier;
