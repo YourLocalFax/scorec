@@ -107,11 +107,13 @@
     <Compile Include="Compile\Source\Token\TokenKind.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\Ast.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\Node.cs" />
+    <Compile Include="Compile\SyntaxTree\Ast\NodeBindingDeclaration.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeBlock.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeAutoCast.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeExplicitCast.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeExpression.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeBoolLiteral.cs" />
+    <Compile Include="Compile\SyntaxTree\Ast\NodeInfix.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeInvocation.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeFieldIndex.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeIdentifier.cs" />
@@ -129,6 +131,7 @@
     <Compile Include="Compile\SyntaxTree\Type\PointerTypeInfo.cs" />
     <Compile Include="Compile\SyntaxTree\Type\ProcedureTypeInfo.cs" />
     <Compile Include="Compile\SyntaxTree\Type\TypeInfo.cs" />
+    <Compile Include="DLLExportAttribute.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="utf8.cs" />

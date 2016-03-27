@@ -103,7 +103,14 @@ namespace ScoreC
 
             //*
             foreach (var token in map.Tokens)
-                Console.WriteLine(token.Span + " : " + token + " : " + map.GetSourceAtSpan(token.Span));
+            {
+                var tokenToString = token.ToString();
+                Console.WriteLine(token.Span.ToString().PadRight(15) + ": " + tokenToString);
+
+                var tokenInSource = map.GetSourceAtSpan(token.Span);
+                if (tokenToString != tokenInSource)
+                    Console.WriteLine(": ".PadLeft(17) + tokenInSource);
+            }
             Console.WriteLine();
             //*/
 
@@ -112,9 +119,11 @@ namespace ScoreC
 
         private static void Exit()
         {
+//#if DEBUG
             Console.Write("Press any key to exit...");
             Console.ReadKey();
             Environment.Exit(0);
+//#endif
         }
     }
 }

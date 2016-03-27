@@ -41,6 +41,8 @@ namespace ScoreC.Compile.Source
                 {
                     var message = Message.TokenLexFailed(start);
                     Log.AddError(message);
+                    if (IsEndOfSource)
+                        break;
                     Advance();
                 }
                 EatWhiteSpace();

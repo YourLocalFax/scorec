@@ -2,6 +2,8 @@
 
 namespace ScoreC.Compile.Source
 {
+    // FIXME(kai): I fee like OperatorKind is a bad thing here, maybe even Keyword. Remove them, pleaseee <3!
+
     sealed class Token
     {
         #region Static Constructors

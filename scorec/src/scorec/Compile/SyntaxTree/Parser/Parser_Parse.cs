@@ -95,17 +95,81 @@ namespace ScoreC.Compile.SyntaxTree
                 // TODO(kai): Assignment statement here plz
                 return expr;
             }
-
-            // we're failures, oh well...
-            return null;
         }
 
         #region Expressions
         private NodeExpression ParseExpression(out bool handleFailureMessage)
         {
             handleFailureMessage = true;
-            // TODO(kai): Infix expressions here plz
-            return ParsePrimaryExpression(out handleFailureMessage);
+            var lhs = ParsePrimaryExpression(out handleFailureMessage);
+            // TODO(kai): check `as`, `when` etc.
+            return ParseInfixOperations(out handleFailureMessage, lhs);
+        }
+
+        private NodeExpression ParseInfixOperations(out bool handleFailureMessage, NodeExpression lhs, int minPrecedence = 0)
+        {
+            handleFailureMessage = true;
+
+            // This condition could probably be a local function (if I could factor that >= vs > into something I guess)
+            while (!IsEndOfSource &&
+                   Check(TokenKind.Operator) &&
+                   Current.OperatorKind.Precedence() >= minPrecedence &&
+                   Current.Span.Line == Previous.Span.EndLine)
+            {
+                var opToken = Current;
+                Advance();
+                // Get an expression without checking infix.
+                var rhs = ParsePrimaryExpression(out handleFailureMessage);
+                // This right here is a prime candidate for a local function. We do it twice, such copy-pasta..
+                if (rhs == null)
+                {
+                    if (handleFailureMessage)
+                    {
+                        handleFailureMessage = false;
+                        Message message;
+                        if (IsEndOfSource)
+                            message = Message.UnexpectedEndOfSource(opToken.Span,
+                                string.Format("Expected expression for right side of operator `{0}`, found end of source.", opToken.Image));
+                        else message = Message.UnexpectedToken(opToken.Span,
+                                string.Format("Expected expression for right side of operator `{0}`, found `{1}`.", opToken.Image, Current.Image));
+                        Log.AddError(message);
+                    }
+                    return null;
+                }
+                // Make sure we don't have a semi colon.
+                else
+                {
+                    var thisPrec = opToken.OperatorKind.Precedence();
+                    // Basically we do the same as above
+                    // This time the precedence must be GREATER, but not equal.
+                    while (!IsEndOfSource &&
+                           Check(TokenKind.Operator) &&
+                           Current.OperatorKind.Precedence() > thisPrec &&
+                           Current.Span.Line == Previous.Span.EndLine)
+                    {
+                        // Our right side is now the result of the infix operation.
+                        rhs = ParseInfixOperations(out handleFailureMessage, rhs, Current.OperatorKind.Precedence());
+                        if (rhs == null)
+                        {
+                            if (handleFailureMessage)
+                            {
+                                handleFailureMessage = false;
+                                Message message;
+                                if (IsEndOfSource)
+                                    message = Message.UnexpectedEndOfSource(opToken.Span,
+                                        string.Format("Expected expression for right side of operator `{0}`, found end of source.", opToken.Image));
+                                else
+                                    message = Message.UnexpectedToken(opToken.Span,
+                                       string.Format("Expected expression for right side of operator `{0}`, found `{1}`.", opToken.Image, Current.Image));
+                                Log.AddError(message);
+                            }
+                            return null;
+                        }
+                    }
+                }
+                lhs = new NodeInfix(opToken.OperatorKind, lhs, rhs);
+            }
+            return lhs;
         }
 
         /// <summary>
@@ -141,11 +205,48 @@ namespace ScoreC.Compile.SyntaxTree
             {
                 var start = Current.Span;
                 Advance(); // `#char`
-                string literal = null;
-                var literalBytes = Encoding.Unicode.GetBytes(literal);
-                //var charCount = Encoding.Unicode.GetCharCount();
-                var utf32 = Encoding.Convert(Encoding.Default, Encoding.UTF32, literalBytes);
-                // result = new NodeCharLiteral(tkCharLiteral);
+
+                if (!Check(TokenKind.String))
+                {
+                    handleFailureMessage = false;
+                    if (IsEndOfSource)
+                    {
+                        var message = Message.UnexpectedEndOfSource(Previous.Span,
+                            "Expected string literal to follow #char directive, found end of source.");
+                        Log.AddError(message);
+                    }
+                    else
+                    {
+                        var message = Message.UnexpectedToken(Current.Span,
+                            string.Format("Expected string literal to follow #char directive, found `{0}`.", Current.Image));
+                        Log.AddError(message);
+                    }
+                    return null;
+                }
+
+                var tkLiteralString = Current;
+                Advance(); // string literal
+
+                var literalBytes = Encoding.Unicode.GetBytes(tkLiteralString.StringLiteral);
+                var utf32 = Encoding.Convert(Encoding.Unicode, Encoding.UTF32, literalBytes);
+                var charCount = Encoding.UTF32.GetCharCount(utf32);
+
+                if (charCount > 1)
+                {
+                    handleFailureMessage = false;
+                    var message = Message.InvalidCharacterLiteral(tkLiteralString);
+                    Log.AddError(message);
+                    return null;
+                }
+
+                var c = Encoding.UTF32.GetChars(utf32);
+
+                uint literal;
+                if (c.Length == 2)
+                    literal = (uint)char.ConvertToUtf32(c[1], c[0]);
+                else literal = (uint)c[0];
+                
+                result = new NodeCharLiteral(start, literal);
             }
             else
             {
@@ -594,6 +695,68 @@ namespace ScoreC.Compile.SyntaxTree
 
             var start = Current.Span;
             var bindingKind = Current.Keyword;
+
+            Advance(); // `let` or `var`
+
+            if (!Check(TokenKind.Identifier))
+            {
+                handleFailureMessage = false;
+                Message message;
+                if (IsEndOfSource)
+                    message = Message.UnexpectedEndOfSource(start,
+                        "Expected identifier for binding name, found end of source.");
+                else message = Message.UnexpectedToken(Current.Span,
+                    string.Format("Expected identifier for binding name, found `{0}`.", Current.Image));
+                Log.AddError(message);
+                return null;
+            }
+
+            var tkIdentifier = Current;
+            Advance();
+
+            TypeInfo typeInfo = null;
+            if (Check(OperatorKind.Colon))
+            {
+                Advance();
+
+                typeInfo = ParseTypeInfo(out handleFailureMessage);
+                if (typeInfo == null)
+                {
+                    if (handleFailureMessage)
+                    {
+                        handleFailureMessage = false;
+                        Message message;
+                        if (IsEndOfSource)
+                            message = Message.MissingType(start, "Expected type in binding declaration, found end of source.");
+                        else message = Message.MissingType(start, "Expected type in binding declaration.");
+                        Log.AddError(message);
+                    }
+                    return null;
+                }
+            }
+
+            NodeExpression value = null;
+            if (Check(OperatorKind.Equal))
+            {
+                Advance();
+
+                value = ParseExpression(out handleFailureMessage);
+                if (value == null)
+                {
+                    if (handleFailureMessage)
+                    {
+                        handleFailureMessage = false;
+                        Message message;
+                        if (IsEndOfSource)
+                            message = Message.MissingType(start, "Expected expression value in binding declaration, found end of source.");
+                        else message = Message.MissingType(start, "Expected expression value in binding declaration.");
+                        Log.AddError(message);
+                    }
+                    return null;
+                }
+            }
+
+            return new NodeBindingDeclaration(start, bindingKind, tkIdentifier, typeInfo, value);
         }
 
         /// <summary>

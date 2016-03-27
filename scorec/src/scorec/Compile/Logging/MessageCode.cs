@@ -22,6 +22,7 @@ namespace ScoreC.Compile.Logging
         MissingType = 0x1006,
         ExpressionParseFailed = 0x1007,
         UnexpectedToken = 0x1008,
+        InvalidCharacterLiteral = 0x1009,
         #endregion
     }
 

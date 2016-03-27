@@ -157,6 +157,16 @@ namespace ScoreC.Compile.Logging
                 expected, message, foundImage);
             return new Message(MessageCode.UnexpectedToken, at, description);
         }
+
+        public static Message InvalidCharacterLiteral(Token literalString)
+        {
+#if DEBUG
+            Debug.Assert(literalString != null);
+#endif
+            var description = string.Format("The string literal {0} does not contain one unicode code point, so it is not a valid character literal.",
+                literalString.Image);
+            return new Message(MessageCode.InvalidCharacterLiteral, literalString.Span, description);
+        }
         #endregion
     }
 }

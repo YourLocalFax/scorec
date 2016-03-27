@@ -73,33 +73,76 @@
 
     static class OperatorKindExt
     {
+        public static int Precedence(this OperatorKind op)
+        {
+            // FIXME(kai)
+            switch (op)
+            {
+            case AmpAmp:
+            case Amp:
+            case BangEqual:
+            case BangLessGreater:
+            case BangLessGreaterEqual:
+            case BangLess:
+            case BangLessEqual:
+            case BangGreater:
+            case BangGreaterEqual:
+            case CaretCaret:
+            case Caret:
+            case ColonColon:
+            case EqualEqual:
+            case Greater:
+            case GreaterEqual:
+            case GreaterGreater:
+            case GreaterGreaterGreater:
+            case Less:
+            case LessEqual:
+            case LessLess:
+            case LessLessLess:
+            case Minus:
+            case MinusMinus:
+            case Percent:
+            case Pipe:
+            case PipePipe:
+            case Plus:
+            case PlusPlus:
+            case QuestionQuestion:
+            case Slash:
+            case SlashSlash:
+            case Star:
+            case Tilde:
+                return 0;
+            default: return -1;
+            }
+        }
+
         public static bool IsAssignment(this OperatorKind op)
         {
             switch (op)
             {
-                case AmpAmpEqual:
-                case AmpEqual:
-                case CaretCaretEqual:
-                case CaretEqual:
-                case ColonColonEqual:
-                case Equal:
-                case GreaterGreaterEqual:
-                case GreaterGreaterGreaterEqual:
-                case LessLessEqual:
-                case LessLessLessEqual:
-                case MinusEqual:
-                case MinusMinusEqual:
-                case PercentEqual:
-                case PipeEqual:
-                case PipePipeEqual:
-                case PlusEqual:
-                case PlusPlusEqual:
-                case SlashEqual:
-                case SlashSlashEqual:
-                case StarEqual:
-                case TildeEqual:
-                    return true;
-                default: return false;
+            case AmpAmpEqual:
+            case AmpEqual:
+            case CaretCaretEqual:
+            case CaretEqual:
+            case ColonColonEqual:
+            case Equal:
+            case GreaterGreaterEqual:
+            case GreaterGreaterGreaterEqual:
+            case LessLessEqual:
+            case LessLessLessEqual:
+            case MinusEqual:
+            case MinusMinusEqual:
+            case PercentEqual:
+            case PipeEqual:
+            case PipePipeEqual:
+            case PlusEqual:
+            case PlusPlusEqual:
+            case SlashEqual:
+            case SlashSlashEqual:
+            case StarEqual:
+            case TildeEqual:
+                return true;
+            default: return false;
             }
         }
 
@@ -107,41 +150,41 @@
         {
             switch (op)
             {
-                case AmpAmp:
-                case Amp:
-                case BangEqual:
-                case BangLessGreater:
-                case BangLessGreaterEqual:
-                case BangLess:
-                case BangLessEqual:
-                case BangGreater:
-                case BangGreaterEqual:
-                case CaretCaret:
-                case Caret:
-                case ColonColon:
-                case EqualEqual:
-                case Greater:
-                case GreaterEqual:
-                case GreaterGreater:
-                case GreaterGreaterGreater:
-                case Less:
-                case LessEqual:
-                case LessLess:
-                case LessLessLess:
-                case Minus:
-                case MinusMinus:
-                case Percent:
-                case Pipe:
-                case PipePipe:
-                case Plus:
-                case PlusPlus:
-                case QuestionQuestion:
-                case Slash:
-                case SlashSlash:
-                case Star:
-                case Tilde:
-                    return true;
-                default: return false;
+            case AmpAmp:
+            case Amp:
+            case BangEqual:
+            case BangLessGreater:
+            case BangLessGreaterEqual:
+            case BangLess:
+            case BangLessEqual:
+            case BangGreater:
+            case BangGreaterEqual:
+            case CaretCaret:
+            case Caret:
+            case ColonColon:
+            case EqualEqual:
+            case Greater:
+            case GreaterEqual:
+            case GreaterGreater:
+            case GreaterGreaterGreater:
+            case Less:
+            case LessEqual:
+            case LessLess:
+            case LessLessLess:
+            case Minus:
+            case MinusMinus:
+            case Percent:
+            case Pipe:
+            case PipePipe:
+            case Plus:
+            case PlusPlus:
+            case QuestionQuestion:
+            case Slash:
+            case SlashSlash:
+            case Star:
+            case Tilde:
+                return true;
+            default: return false;
             }
         }
 
@@ -149,14 +192,14 @@
         {
             switch (op)
             {
-                case Amp:
-                case Bang:
-                case Caret:
-                case Minus:
-                case Star:
-                case Tilde:
-                    return true;
-                default: return false;
+            case Amp:
+            case Bang:
+            case Caret:
+            case Minus:
+            case Star:
+            case Tilde:
+                return true;
+            default: return false;
             }
         }
     }

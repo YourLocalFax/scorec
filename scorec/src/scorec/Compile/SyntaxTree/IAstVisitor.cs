@@ -20,5 +20,6 @@
         void Visit(NodeInvocation node);
         void Visit(NodeExplicitCast node);
         void Visit(NodeAutoCast node);
+        void Visit(NodeInfix node);
     }
 }
