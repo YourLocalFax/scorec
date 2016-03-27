@@ -21,6 +21,12 @@
         public bool InTailPosition = false;
 
         /// <summary>
+        /// Used to determine if this expression is an LValue.
+        /// An LValue can be the left-hand side of an expression.
+        /// </summary>
+        public abstract bool IsLValue { get; }
+
+        /// <summary>
         /// The type info of this expression.
         /// If this is known at parse time (certain literals, for example) then it will be set then.
         /// Otherwise this gets set during the type-check phase.
