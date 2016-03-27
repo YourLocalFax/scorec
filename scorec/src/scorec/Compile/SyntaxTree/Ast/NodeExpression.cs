@@ -24,7 +24,7 @@
         /// Used to determine if this expression is an LValue.
         /// An LValue can be the left-hand side of an expression.
         /// </summary>
-        public abstract bool IsLValue { get; }
+        public virtual bool IsLValue => false;
 
         /// <summary>
         /// The type info of this expression.
