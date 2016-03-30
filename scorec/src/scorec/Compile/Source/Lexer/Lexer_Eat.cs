@@ -62,8 +62,7 @@ namespace ScoreC.Compile.Source
                 }
             }
 
-            var message = Message.UnexpectedEndOfSource(GetSpan(start), "Unfinished block comment, found end of source.");
-            Log.AddError(message);
+            Log.AddError(GetSpan(start), "Unfinished block comment, found end of source.");
         }
     }
 }

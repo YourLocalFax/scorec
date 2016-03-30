@@ -143,4 +143,7 @@ Should be able to support things like reference counts and GC to some degree, ma
 
 /********** Captures **********\
 
+Both string (can only call procedures with compatible captures) and weak (can call
+ any procedure regardless of capture).
+
 \********** Captures **********/

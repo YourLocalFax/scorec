@@ -39,8 +39,7 @@ namespace ScoreC.Compile.SyntaxTree
                     ast.AddNode(node);
                 else if (handleFailureMessage)
                 {
-                    var message = Message.NodeParseFailed(start);
-                    Log.AddError(message);
+                    Log.AddError(start.Span, "Failed to parse at token `{0}`.", start.Image);
                     Advance(); // Skip this one plz.
                 }
             }
@@ -50,6 +49,20 @@ namespace ScoreC.Compile.SyntaxTree
             Log = null;
 
             return ast;
+        }
+
+        private string EoSOrCurrentToken()
+        {
+            if (IsEndOfSource)
+                return "end of source";
+            return "`" + Current.Image + "`";
+        }
+
+        private Span EoSOrCurrentSpan()
+        {
+            if (IsEndOfSource)
+                return Map.EndOfSourceSpan;
+            return Current.Span;
         }
 
         /// <summary>
@@ -74,13 +87,9 @@ namespace ScoreC.Compile.SyntaxTree
                 if (!Check(TokenKind.Proc))
                 {
                     handleFailureMessage = false;
-                    Message message;
-                    if (IsEndOfSource)
-                        message = Message.UnexpectedEndOfSource(Previous.Span,
-                            "Expected `proc` to start procedure declaration, found end of source.");
-                    else message = Message.UnexpectedToken(Current.Span,
-                       "Expected `proc` to start procedure declaration, found `" + Current.Image + "`.");
-                    Log.AddError(message);
+                    Log.AddError(EoSOrCurrentSpan(),
+                                 "Expected `proc` to start a procedure declaration following `extern`, found `{0}`.",
+                                 EoSOrCurrentToken());
                     return null;
                 }
                 return ParseProcedureDeclaration(true, out handleFailureMessage);
@@ -109,13 +118,9 @@ namespace ScoreC.Compile.SyntaxTree
                         if (handleFailureMessage)
                         {
                             handleFailureMessage = false;
-                            Message message;
-                            if (IsEndOfSource)
-                                message = Message.UnexpectedEndOfSource(Previous.Span,
-                                    "Expected expression following assignment operator, found end of source.");
-                            else message = Message.UnexpectedToken(Previous.Span,
-                               string.Format("Expected expression following assignment operator, found `{0}`", Current.Image));
-                            Log.AddError(message);
+                            Log.AddError(EoSOrCurrentSpan(),
+                                         "Expected an expression following an assignment operator, found {0}.",
+                                         EoSOrCurrentToken());
                         }
                         return null;
                     }
@@ -123,8 +128,7 @@ namespace ScoreC.Compile.SyntaxTree
                     if (!expr.IsLValue)
                     {
                         handleFailureMessage = false;
-                        var message = Message.InvalidAssignmentTarget(expr.Start);
-                        Log.AddError(message);
+                        Log.AddError(expr.Start, "Invalid assignment target, can only assign to l-values.");
                         return null;
                     }
 
@@ -165,13 +169,9 @@ namespace ScoreC.Compile.SyntaxTree
                     if (handleFailureMessage)
                     {
                         handleFailureMessage = false;
-                        Message message;
-                        if (IsEndOfSource)
-                            message = Message.UnexpectedEndOfSource(opToken.Span,
-                                string.Format("Expected expression for right side of operator `{0}`, found end of source.", opToken.Image));
-                        else message = Message.UnexpectedToken(opToken.Span,
-                                string.Format("Expected expression for right side of operator `{0}`, found `{1}`.", opToken.Image, Current.Image));
-                        Log.AddError(message);
+                        Log.AddError(opToken.Span,
+                                     "Expected an expression for the right side of infix operator `{0}`.",
+                                     opToken.Image);
                     }
                     return null;
                 }
@@ -194,14 +194,9 @@ namespace ScoreC.Compile.SyntaxTree
                             if (handleFailureMessage)
                             {
                                 handleFailureMessage = false;
-                                Message message;
-                                if (IsEndOfSource)
-                                    message = Message.UnexpectedEndOfSource(opToken.Span,
-                                        string.Format("Expected expression for right side of operator `{0}`, found end of source.", opToken.Image));
-                                else
-                                    message = Message.UnexpectedToken(opToken.Span,
-                                       string.Format("Expected expression for right side of operator `{0}`, found `{1}`.", opToken.Image, Current.Image));
-                                Log.AddError(message);
+                                Log.AddError(opToken.Span,
+                                             "Expected an expression for the right side of infix operator `{0}`.",
+                                             opToken.Image);
                             }
                             return null;
                         }
@@ -251,18 +246,9 @@ namespace ScoreC.Compile.SyntaxTree
                 if (!Check(TokenKind.String))
                 {
                     handleFailureMessage = false;
-                    if (IsEndOfSource)
-                    {
-                        var message = Message.UnexpectedEndOfSource(Previous.Span,
-                            "Expected string literal to follow #char directive, found end of source.");
-                        Log.AddError(message);
-                    }
-                    else
-                    {
-                        var message = Message.UnexpectedToken(Current.Span,
-                            string.Format("Expected string literal to follow #char directive, found `{0}`.", Current.Image));
-                        Log.AddError(message);
-                    }
+                    Log.AddError(EoSOrCurrentSpan(),
+                                 "Expected a string literal to follow the #char directive, found {0}.",
+                                 EoSOrCurrentToken());
                     return null;
                 }
 
@@ -276,8 +262,8 @@ namespace ScoreC.Compile.SyntaxTree
                 if (charCount > 1)
                 {
                     handleFailureMessage = false;
-                    var message = Message.InvalidCharacterLiteral(tkLiteralString);
-                    Log.AddError(message);
+                    Log.AddError(tkLiteralString.Span,
+                                 "The given string literal does not contain a lone Unicode code point. Cannot convert to a character literal.");
                     return null;
                 }
 
@@ -332,18 +318,9 @@ namespace ScoreC.Compile.SyntaxTree
                     if (!Check(TokenKind.CloseCurlyBracket))
                     {
                         handleFailureMessage = false;
-                        if (IsEndOfSource)
-                        {
-                            var message = Message.UnexpectedEndOfSource(Previous.Span,
-                                "Expected `}` to close block, found end of source.");
-                            Log.AddError(message);
-                        }
-                        else
-                        {
-                            var message = Message.UnexpectedToken(Current.Span,
-                                Current.Image, "`}`", "to close block expression");
-                            Log.AddError(message);
-                        }
+                        Log.AddError(EoSOrCurrentSpan(),
+                                     "Expected `}` to close this block, found {0}.",
+                                     EoSOrCurrentToken());
                         return null;
                     }
 
@@ -354,8 +331,9 @@ namespace ScoreC.Compile.SyntaxTree
                 default:
                     {
                         handleFailureMessage = false;
-                        var message = Message.ExpressionParseFailed(Current);
-                        Log.AddError(message);
+                        Log.AddError(Current.Span,
+                                     "Failed to parse an expression at token `{0}`.",
+                                     Current.Image);
                         //Advance();
                         return null;
                     }
@@ -414,7 +392,7 @@ namespace ScoreC.Compile.SyntaxTree
                     result.Add(expr);
                 else break;
 
-                if (Check(TokenKind.CloseBracket))
+                if (Check(closeDelimiter))
                     break;
 
                 if (Check(TokenKind.Comma))
@@ -430,9 +408,9 @@ namespace ScoreC.Compile.SyntaxTree
                         }
 
                         handleFailureMessage = false;
-                        var message = Message.UnexpectedToken(Previous.Span,
-                            string.Format("Unexpected `,` found before closing delimiter `{0}`.", closeDelimiterImage));
-                        Log.AddError(message);
+                        Log.AddError(Previous.Span,
+                                     "Unexpected `,` found before closing delimiter `{0}`.",
+                                     closeDelimiterImage);
                         return new List<NodeExpression>();
                     }
                     // This is implicit, but keep it here anyway for clarity.
@@ -447,18 +425,11 @@ namespace ScoreC.Compile.SyntaxTree
                     }
                     else
                     {
-                        if (IsEndOfSource)
-                        {
-                            var message = Message.UnexpectedEndOfSource(Previous.Span,
-                                string.Format("Expected `{0}`, found end of source.", closeDelimiterImage));
-                            Log.AddError(message);
-                        }
-                        else
-                        {
-                            var message = Message.UnexpectedToken(Current.Span,
-                                Current.Image, "`)`");
-                            Log.AddError(message);
-                        }
+                        handleFailureMessage = false;
+                        Log.AddError(EoSOrCurrentSpan(),
+                                     "Expected `{0}`, found {1}.",
+                                     closeDelimiterImage,
+                                     EoSOrCurrentToken());
                         return new List<NodeExpression>();
                     }
                 }
@@ -467,18 +438,10 @@ namespace ScoreC.Compile.SyntaxTree
             if (!Expect(closeDelimiter))
             {
                 handleFailureMessage = false;
-                if (IsEndOfSource)
-                {
-                    var message = Message.UnexpectedEndOfSource(Previous.Span,
-                        string.Format("Expected `{0}` to close argument list, found end of source.", closeDelimiterImage));
-                    Log.AddError(message);
-                }
-                else
-                {
-                    var message = Message.UnexpectedToken(Current.Span,
-                        Current.Image, "`)`", "to close argument list");
-                    Log.AddError(message);
-                }
+                Log.AddError(EoSOrCurrentSpan(),
+                             "Expected `{0}`, found {1}.",
+                             closeDelimiterImage,
+                             EoSOrCurrentToken());
                 return new List<NodeExpression>();
             }
 
@@ -540,8 +503,9 @@ namespace ScoreC.Compile.SyntaxTree
                     else
                     {
                         handleFailureMessage = false;
-                        var message = Message.UnexpectedToken(Current.Span, Current.Image, "Identifier");
-                        Log.AddError(message);
+                        Log.AddError(EoSOrCurrentSpan(),
+                                     "Identifier expected for field index, found {0}",
+                                     EoSOrCurrentToken());
                         result = null;
                     }
                     return;
@@ -566,29 +530,27 @@ namespace ScoreC.Compile.SyntaxTree
             if (CheckOperator("*"))
             {
                 var tkStar = Current;
-                Advance("*");
+                Advance();
                 var type = ParseTypeInfo(out handleFailureMessage);
                 if (type == null)
                     return null;
                 return new PointerTypeInfo(tkStar, type);
             }
+            else if (Check(TokenKind.BuiltinTypeName))
+            {
+                Advance();
+                return BuiltinTypeInfo.Get(Previous.Image);
+            }
             else
             {
                 switch (Current.Kind)
                 {
+                /*
                 case TokenKind.Identifier:
                     {
-                        // URGENT(kai): Handle qualified typenames. This might include going through builtin types, so consider that!
-                        if (BuiltinTypeInfo.IsValid(Current.Identifier))
-                        {
-                            Advance();
-                            return BuiltinTypeInfo.Get(Previous.Identifier);
-                        }
-                        handleFailureMessage = false;
-                        var message = Message.TypeParseFailed(Current);
-                        Log.AddError(message);
                         return null;
                     }
+                */
                 #region case Tuple or Procedure Type:
                 case TokenKind.OpenBracket:
                     {
@@ -598,7 +560,7 @@ namespace ScoreC.Compile.SyntaxTree
                         var names = new List<Token>();
                         var types = new List<TypeInfo>();
 
-                        // FIXME(kai): !!!!!!!! refactor this to be similar to ParseCommaSeparatedExpressions!!
+                        // FIXME(kai): !!!!!!!! I think this needs to be a bit better plz help
 
                         while (!Check(TokenKind.CloseBracket))
                         {
@@ -613,33 +575,32 @@ namespace ScoreC.Compile.SyntaxTree
                             names.Add(tkName);
 
                             var type = ParseTypeInfo(out handleFailureMessage);
+                            types.Add(type);
+
                             if (type == null)
                             {
-                                types.Add(null);
                                 if (Check(TokenKind.Comma))
                                 {
-                                    var message = Message.MissingType(Current.Span,
-                                        "Expected a type in tuple or procedure type, found a comma.");
-                                    Log.AddError(message);
+                                    Log.AddError(Current.Span,
+                                                 "Expected a parameter type in procedure type, found a comma.");
                                     // NOTE(kai): continue on to parse out the comma
                                 }
                                 else if (CheckNext(TokenKind.Comma))
                                 {
-                                    var message = Message.MissingType(Current.Span,
-                                        string.Format("Expected a type in tuple or procedure type, found a `{0}`.", Current.Image));
-                                    Log.AddError(message);
+                                    Log.AddError(Current.Span,
+                                                 "Expected a parameter type in procedure type, found `{0}`.",
+                                                 Current.Image);
                                     Advance();
                                     // NOTE(kai): continue on to parse out the comma
                                 }
                                 else
                                 {
                                     handleFailureMessage = false;
-                                    var message = Message.TypeParseFailed(Current);
-                                    Log.AddError(message);
+                                    Log.AddError(Current.Span,
+                                                 "Failed to parse parameter type in procedure type.");
                                     return null;
                                 }
                             }
-                            types.Add(type);
 
                             // If we hit a `)` then we can stop looping
                             if (Check(TokenKind.CloseBracket))
@@ -648,8 +609,9 @@ namespace ScoreC.Compile.SyntaxTree
                             else if (!Expect(TokenKind.Comma))
                             {
                                 // TODO(kai): Check options here for better recovery/errors.
-                                var message = Message.TypeParseFailed(IsEndOfSource ? Current : tkOpenBracket);
-                                Log.AddError(message);
+                                Log.AddError(EoSOrCurrentSpan(),
+                                             "Expected `,` in procedure type, found {0}",
+                                             EoSOrCurrentToken());
                                 return null;
                             }
                         }
@@ -657,9 +619,8 @@ namespace ScoreC.Compile.SyntaxTree
                         var tkCloseBracket = Current;
                         if (!Expect(TokenKind.CloseBracket))
                         {
-                            var message = Message.TypeParseFailed(tkOpenBracket.Span,
+                            Log.AddError(tkOpenBracket.Span,
                                 "Missing `(` to match opening `)` in tuple or procedure type.");
-                            Log.AddError(message);
                             return null;
                         }
 
@@ -669,7 +630,6 @@ namespace ScoreC.Compile.SyntaxTree
                         for (int i = 0; i < count; i++)
                             parameters.Add(new ProcedureTypeInfo.Parameter(names[i]?.Identifier ?? null, types[i]));
 
-                        // Is this actually a procedure type?
                         if (Check(TokenKind.GoesTo))
                         {
                             var tkArrow = Current;
@@ -681,9 +641,8 @@ namespace ScoreC.Compile.SyntaxTree
                                 if (handleFailureMessage)
                                 {
                                     handleFailureMessage = false;
-                                    var message = Message.MissingType(tkArrow.Span,
+                                    Log.AddError(tkArrow.Span,
                                         "Procedure type is missing a return type.");
-                                    Log.AddError(message);
                                 }
                                 return null;
                             }
@@ -697,9 +656,8 @@ namespace ScoreC.Compile.SyntaxTree
                         }
                         else
                         {
-                            // FIXME(kai): when we implement tuples fix this up.
                             var returns = new List<ProcedureTypeInfo.Parameter>();
-                            returns.Add(new ProcedureTypeInfo.Parameter(null, BuiltinTypeInfo.Get(BuiltinType.VOID)));
+                            returns.Add(new ProcedureTypeInfo.Parameter(null, BuiltinTypeInfo.Get(BuiltinType.Void)));
 
                             return new ProcedureTypeInfo(tkOpenBracket, tkCloseBracket, null, parameters, returns);
                         }
@@ -743,13 +701,9 @@ namespace ScoreC.Compile.SyntaxTree
             if (!Check(TokenKind.Identifier))
             {
                 handleFailureMessage = false;
-                Message message;
-                if (IsEndOfSource)
-                    message = Message.UnexpectedEndOfSource(start,
-                        "Expected identifier for binding name, found end of source.");
-                else message = Message.UnexpectedToken(Current.Span,
-                    string.Format("Expected identifier for binding name, found `{0}`.", Current.Image));
-                Log.AddError(message);
+                Log.AddError(EoSOrCurrentSpan(),
+                             "Expected identifier for binding name, found `{0}`.",
+                             EoSOrCurrentToken());
                 return null;
             }
 
@@ -767,11 +721,9 @@ namespace ScoreC.Compile.SyntaxTree
                     if (handleFailureMessage)
                     {
                         handleFailureMessage = false;
-                        Message message;
-                        if (IsEndOfSource)
-                            message = Message.MissingType(start, "Expected type in binding declaration, found end of source.");
-                        else message = Message.MissingType(start, "Expected type in binding declaration.");
-                        Log.AddError(message);
+                        Log.AddError(EoSOrCurrentSpan(),
+                                     "Expected type in binding declaration, found {0}.",
+                                     EoSOrCurrentToken());
                     }
                     return null;
                 }
@@ -788,11 +740,9 @@ namespace ScoreC.Compile.SyntaxTree
                     if (handleFailureMessage)
                     {
                         handleFailureMessage = false;
-                        Message message;
-                        if (IsEndOfSource)
-                            message = Message.MissingType(start, "Expected expression value in binding declaration, found end of source.");
-                        else message = Message.MissingType(start, "Expected expression value in binding declaration.");
-                        Log.AddError(message);
+                        Log.AddError(EoSOrCurrentSpan(),
+                                     "Expected expression value in binding declaration, found {0}.",
+                                     EoSOrCurrentToken());
                     }
                     return null;
                 }
@@ -859,9 +809,7 @@ namespace ScoreC.Compile.SyntaxTree
                         // We don't have a name AND we can't yet see a parameter list.
                         // At this point we assume that a procedure is NOT what's coming up,
                         //  and ask the user if that was intended.
-                        var failMessage = Message.UnnamedProcedure(kwProc.Span,
-                            "Failed to parse a procedure declaration. Is `proc` a typo?");
-                        Log.AddError(failMessage);
+                        Log.AddError(kwProc.Span, "Failed to parse a procedure declaration. Is `proc` a typo?");
                         return null;
                     }
                     else // if (CheckNext(TokenKind.OpenBracket))
@@ -875,8 +823,7 @@ namespace ScoreC.Compile.SyntaxTree
                     }
                 }
                 // Log the not-so-failure messages here.
-                var message = Message.UnnamedProcedure(kwProc.Span, description);
-                Log.AddError(message);
+                Log.AddError(kwProc.Span, description);
             }
 
             ProcedureTypeInfo procType;
@@ -890,9 +837,9 @@ namespace ScoreC.Compile.SyntaxTree
             }
             else
             {
-                var message = Message.MissingProcedureType(kwProc.Span, tkName.Image,
-                    IsEndOfSource ? null : Current);
-                Log.AddError(message);
+                handleFailureMessage = false;
+                Log.AddError(kwProc.Span,
+                             "Procedure is missing a type.");
                 return null;
             }
 
@@ -950,9 +897,7 @@ namespace ScoreC.Compile.SyntaxTree
             else
             {
                 handleFailureMessage = false;
-                var message = Message.MissingProcedureBody(kwProc.Span, tkName.Image,
-                    IsEndOfSource ? null : Current);
-                Log.AddError(message);
+                Log.AddError(kwProc.Span, "Procedure is missing a body.");
                 return null;
             }
 

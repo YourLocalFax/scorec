@@ -5,6 +5,7 @@ using System.Linq;
 namespace ScoreC.Compile.Source
 {
     using Logging;
+    using SyntaxTree;
     using System;
 
     sealed partial class Lexer
@@ -40,14 +41,15 @@ namespace ScoreC.Compile.Source
                     tokens.Add(token);
                 else if (handleFailureMessage)
                 {
-                    var message = Message.TokenLexFailed(start);
-                    Log.AddError(message);
+                    Log.AddError(start, "Failed to lext token at `{0}`.", Current);
                     if (IsEndOfSource)
                         break;
                     Advance();
                 }
                 EatWhiteSpace();
             }
+
+            Map.EndOfSourceSpan = GetSpan();
 
             // Reset this lexer, we're done for now.
             sourceCached = null;
@@ -85,7 +87,7 @@ namespace ScoreC.Compile.Source
             //else if (Operator.IsOperatorStart(Current))
             //    return GetOperator();
             else if (char.IsDigit(Current))
-                return GetNumericLiteral();
+                return GetNumericLiteral(out handleFailureMessage);
 
             // TODO(kai): Lex compiler directives like #if and #run
 
@@ -316,6 +318,8 @@ namespace ScoreC.Compile.Source
                 return Token.NewWildCard(start);
             else if (Identifier.IsKeyword(image))
                 return Token.NewKeyword(GetSpan(start), image);
+            else if (BuiltinTypeInfo.IsBulitinTypeName(image))
+                return Token.NewBuiltinTypeName(GetSpan(start), image);
             else return Token.NewIdentifier(GetSpan(start), image);
         }
 
@@ -357,8 +361,7 @@ namespace ScoreC.Compile.Source
                     else
                     {
                         handleFailureMessage = false;
-                        var message = Message.UnfinishedLiteral(start, "string");
-                        Log.AddError(message);
+                        Log.AddError(start, "Unfinished string literal.");
                         return null;
                     }
                 }
@@ -368,16 +371,14 @@ namespace ScoreC.Compile.Source
             if (IsEndOfSource)
             {
                 handleFailureMessage = false;
-                var message = Message.UnexpectedEndOfSource(GetSpan(start), "Unfinished string literal, found end of source.");
-                Log.AddError(message);
+                Log.AddError(GetSpan(start), "Unfinished string literal, found end of source.");
                 return null;
             }
 
             if (!Expect(delimiter)) // close delimiter
             {
                 handleFailureMessage = false;
-                var message = Message.UnfinishedLiteral(start, "string");
-                Log.AddError(message);
+                Log.AddError(start, "Unfinished string literal.");
                 return null;
             }
 
@@ -432,8 +433,7 @@ namespace ScoreC.Compile.Source
             if (IsEndOfSource)
             {
                 handleFailureMessage = false;
-                var message = Message.UnexpectedEndOfSource(start, "Expected identifier for directive name, found end of source.");
-                Log.AddError(message);
+                Log.AddError(start, "Expected identifier for directive name, found end of source.");
                 return null;
             }
 
@@ -525,8 +525,9 @@ namespace ScoreC.Compile.Source
         /// TODO(kai): Maybe split this up if possible. This is gonna be big.
         /// </summary>
         /// <returns></returns>
-        private Token GetNumericLiteral()
+        private Token GetNumericLiteral(out bool handleFailureMessage)
         {
+            handleFailureMessage = true;
 #if DEBUG
             Debug.Assert(!IsEndOfSource, "No characters left for a numeric literal!");
             Debug.Assert(char.IsDigit(Current), "Numeric literals must start with a digit, not '" + Current + "'!");
@@ -555,9 +556,9 @@ namespace ScoreC.Compile.Source
                     {
                         if (buffer.Length == 0 || !(HasNext && (char.IsDigit(Next) || Identifier.IsPart(Next))))
                         {
+                            handleFailureMessage = false;
                             // FIXME(kai): There are multiple invalid locations, we should be specific!
-                            var message = Message.InvalidDigitSeparatorLocation(start);
-                            Log.AddError(message);
+                            Log.AddError(start, "Invalid digit separator location. FIXME(kai): FIX THIS ERROR IT LOOKS BAD.");
                         }
                         Advance();
                     }
@@ -611,8 +612,8 @@ namespace ScoreC.Compile.Source
                 {
                     if (!c.IsDigitInRadix(iRadix))
                     {
-                        var message = Message.InvalidDigitInRadix(span, c, image);
-                        Log.AddError(message);
+                        handleFailureMessage = false;
+                        Log.AddError(span, "Invalid digit `{0}` in radix {1}.", c, iRadix);
                     }
                 }
                 return Token.NewIntegerLiteral(span, literal, iRadix, image);

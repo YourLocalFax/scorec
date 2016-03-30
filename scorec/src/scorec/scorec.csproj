@@ -87,8 +87,6 @@
   <ItemGroup>
     <Compile Include="Compile\Logging\Log.cs" />
     <Compile Include="Compile\Logging\Message.cs" />
-    <Compile Include="Compile\Logging\MessageCode.cs" />
-    <Compile Include="Compile\Logging\MessageConstructor.cs" />
     <Compile Include="Compile\Logging\MessageFormat.cs" />
     <Compile Include="Compile\Source\File\SpanFormat.cs" />
     <Compile Include="CharacterExt.cs" />

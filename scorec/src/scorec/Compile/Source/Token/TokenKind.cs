@@ -7,6 +7,7 @@
         Identifier,
         Keyword,
         WildCard,
+        BuiltinTypeName,
         Varargs,
         Uninitialized,
 

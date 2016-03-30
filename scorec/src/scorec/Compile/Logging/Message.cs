@@ -7,16 +7,14 @@ namespace ScoreC.Compile.Logging
 
     sealed partial class Message
     {
-        public readonly MessageCode Code;
         public readonly Span Location;
         public readonly string Description;
 
-        private Message(MessageCode code, Span location, string description)
+        public Message(Span location, string description)
         {
 #if DEBUG
             Debug.Assert(description != null);
 #endif
-            Code = code;
             Location = location;
             Description = description;
         }
@@ -27,12 +25,6 @@ namespace ScoreC.Compile.Logging
         public string ToString(MessageFormat format)
         {
             var buffer = new StringBuilder();
-
-            if (format.ShowMessageCode)
-            {
-                buffer.Append(Code.ToCodeString());
-                buffer.Append(": ");
-            }
 
             if (format.ShowLocation)
             {

@@ -17,7 +17,7 @@
         {
             TkLiteral = tkLiteral;
             // Bools are always of bool type, so set that.
-            TypeInfo = BuiltinTypeInfo.Get(BuiltinType.BOOL);
+            TypeInfo = BuiltinTypeInfo.Get(BuiltinType.Bool);
         }
 
         public override void Accept(IAstVisitor visitor) => visitor.Visit(this);

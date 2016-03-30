@@ -139,6 +139,8 @@ namespace ScoreC.Compile.Source
         // UGRGET(kai): doc this
         public List<Token> Tokens = null;
 
+        public Span EndOfSourceSpan;
+
         // UGRGET(kai): doc this
         public Ast Ast = null;
 

@@ -1,43 +1,71 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 
 namespace ScoreC.Compile.SyntaxTree
 {
+    using static BuiltinType;
+
     enum BuiltinType
     {
-        VOID,
-        BOOL,
+        Void,
+        Bool,
+
         S8,
         S16,
         S32,
         S64,
         S128,
+
         U8,
         U16,
         U32,
         U64,
         U128,
-        INT,
-        UINT,
-        USIZE,
-        PTRDIFF,
+
         R16,
         R32,
         R64,
         R80,
         R128,
-        REAL,
-        C8,
-        C16,
-        C32,
+
+        Int,
+        Uint,
+        Usize,
+        Ptrdiff,
+        Real,
     }
 
     sealed class BuiltinTypeInfo : TypeInfo
     {
-        private static Dictionary<string, BuiltinTypeInfo> builtins = new Dictionary<string, BuiltinTypeInfo>();
+        private static Dictionary<string, BuiltinTypeInfo> builtins = new Dictionary<string, BuiltinTypeInfo>()
+        {
+            { "void",     new BuiltinTypeInfo(Void)    },
+            { "bool",     new BuiltinTypeInfo(Bool)    },
+
+            { "s8",       new BuiltinTypeInfo(S8)      },
+            { "s16",      new BuiltinTypeInfo(S16)     },
+            { "s32",      new BuiltinTypeInfo(S32)     },
+            { "s64",      new BuiltinTypeInfo(S64)     },
+            { "s128",     new BuiltinTypeInfo(S128)    },
+
+            { "u8",       new BuiltinTypeInfo(U8)      },
+            { "u16",      new BuiltinTypeInfo(U16)     },
+            { "u32",      new BuiltinTypeInfo(U32)     },
+            { "u64",      new BuiltinTypeInfo(U64)     },
+            { "u128",     new BuiltinTypeInfo(U128)    },
+
+            { "r16",      new BuiltinTypeInfo(R16)     },
+            { "r32",      new BuiltinTypeInfo(R32)     },
+            { "r64",      new BuiltinTypeInfo(R64)     },
+            { "r80",      new BuiltinTypeInfo(R80)     },
+            { "r128",     new BuiltinTypeInfo(R128)    },
+
+            { "int",      new BuiltinTypeInfo(Int)     },
+            { "uint",     new BuiltinTypeInfo(Uint)    },
+            { "usize",    new BuiltinTypeInfo(Usize)   },
+            { "ptrdiff",  new BuiltinTypeInfo(Ptrdiff) },
+            { "real",     new BuiltinTypeInfo(Real)    },
+        };
 
         /// <summary>
         /// Attempts to get the BuiltinTypeInfo from the given image.
@@ -47,46 +75,36 @@ namespace ScoreC.Compile.SyntaxTree
         public static BuiltinTypeInfo Get(string image)
         {
 #if DEBUG
-            Debug.Assert(!string.IsNullOrEmpty(image), "BuiltinTypeInfo.Get needs an image you dumbass.");
-            Debug.Assert(image == image.ToLower(), "No builtin types contain uppercase letters, sucks don't it.");
+            Debug.Assert(IsBulitinTypeName(image), "Invalid builtin type image `" + image + "` passed!");
 #endif
-            BuiltinTypeInfo info;
-            if (builtins.TryGetValue(image, out info))
-                return info;
-
-            BuiltinType type;
-            if (Enum.TryParse(image.ToUpper(), out type))
-            {
-                info = new BuiltinTypeInfo(image, type);
-                builtins[image] = info;
-                return info;
-            }
-            else
-            {
-#if DEBUG
-                Debug.Assert(false, string.Format("This shouldn't happen, dood, you passed a non-builtin type name `{0}` to the builtin getter dood.", image));
-#endif
-                return null;
-            }
+            return builtins[image];
         }
 
-        public static BuiltinTypeInfo Get(BuiltinType type) =>
-            Get(type.ToString().ToLower());
+        public static BuiltinTypeInfo Get(BuiltinType type)
+        {
+            foreach (var pair in builtins)
+                if (pair.Value.Type == type)
+                    return pair.Value;
+#if DEBUG
+            Debug.Assert(false);
+#endif
+            return null;
+        }
 
         /// <summary>
         /// Determines if the given image is a valid builtin type name.
         /// </summary>
         /// <param name="image"></param>
         /// <returns></returns>
-        public static bool IsValid(string image) =>
-            Get(image) != null;
+        public static bool IsBulitinTypeName(string image) =>
+            builtins.ContainsKey(image);
 
         public string Image;
         public BuiltinType Type;
 
-        private BuiltinTypeInfo(string image, BuiltinType type)
+        private BuiltinTypeInfo(BuiltinType type)
         {
-            Image = image;
+            Image = type.ToString().ToLower();
             Type = type;
         }
 

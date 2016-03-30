@@ -69,6 +69,7 @@ namespace ScoreC.Compile.SyntaxTree
         private void Advance() =>
             tokenOffset++;
 
+        /*
         private void Advance(string image)
         {
 #if DEBUG
@@ -79,7 +80,7 @@ namespace ScoreC.Compile.SyntaxTree
                 Advance();
             else
             {
-                // URGENT(kai): If we don't need this we can leave it commented just in case, but should still remove this method.
+                // If we don't need this we can leave it commented just in case, but should still remove this method.
                 throw new Exception("DO WE NEED THIS OR NAH. IF NOT REMOVE THIS METHOD AND CHANGE .StartsWith AND CHANGE IT TO ==");
 
                 var oldToken = Current;
@@ -94,6 +95,7 @@ namespace ScoreC.Compile.SyntaxTree
                 Map.Tokens.Insert(tokenOffset + 1, newNext);
             }
         }
+        */
 
         private void Advance(int count)
         {
@@ -134,16 +136,6 @@ namespace ScoreC.Compile.SyntaxTree
                 return false;
             Advance();
             return true;
-        }
-        #endregion
-
-        #region bool ExpectOrError(kind, message)
-        private bool ExpectOrError(TokenKind tokenKind, Message message)
-        {
-            if (Expect(tokenKind))
-                return true;
-            Log.AddError(message);
-            return false;
         }
         #endregion
     }

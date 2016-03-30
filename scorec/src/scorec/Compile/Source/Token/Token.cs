@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using ScoreC.Compile.SyntaxTree;
+using System.Diagnostics;
 
 namespace ScoreC.Compile.Source
 {
@@ -36,6 +37,16 @@ namespace ScoreC.Compile.Source
 #endif
             var result = new Token(span, Source.Identifier.GetKeywordKind(keyword));
             result.Image = keyword;
+            return result;
+        }
+
+        public static Token NewBuiltinTypeName(Span span, string typeName)
+        {
+#if DEBUG
+            Debug.Assert(BuiltinTypeInfo.IsBulitinTypeName(typeName), "Given image isn't a valid builtin type name!");
+#endif
+            var result = new Token(span, TokenKind.BuiltinTypeName);
+            result.Image = typeName;
             return result;
         }
 

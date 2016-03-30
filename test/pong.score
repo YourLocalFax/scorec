@@ -1,6 +1,9 @@
 
+/# Currently will just dump all names in the global scope.
+/# Eventually will dump them in an `opengl` namespace.
 use opengl
+/# `use opengl as gl` would rename the namespace in this file only
+/# `use opengl._` would dump all names into the global namespace
 
 proc main() = {
-   
 }
