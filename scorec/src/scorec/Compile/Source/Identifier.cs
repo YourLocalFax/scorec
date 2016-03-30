@@ -8,55 +8,56 @@ namespace ScoreC.Compile.Source
     /// </summary>
     static class Identifier
     {
-        private static Dictionary<string, Keyword> KEYWORD_LOOKUP = new Dictionary<string, Keyword>()
+        private static Dictionary<string, TokenKind> KEYWORD_LOOKUP = new Dictionary<string, TokenKind>()
         {
             // literal
-            { "true", Keyword.True },
-            { "false", Keyword.False },
+            { "true", TokenKind.True },
+            { "false", TokenKind.False },
             // operator
-            { "as", Keyword.As },
-            { "auto", Keyword.Auto },
+            { "is", TokenKind.Is },
+            { "as", TokenKind.As },
+            { "auto", TokenKind.Auto },
             // declaration
-            { "proc", Keyword.Proc },
-            { "type", Keyword.Type },
-            { "data", Keyword.Data },
-            { "enum", Keyword.Enum },
-            { "class", Keyword.Class },
-            { "trait", Keyword.Trait },
-            { "impl", Keyword.Impl },
-            { "mod", Keyword.Mod },
-            { "var", Keyword.Var },
-            { "let", Keyword.Let },
-            { "extern", Keyword.Extern },
-            { "export", Keyword.Export },
+            { "proc", TokenKind.Proc },
+            { "type", TokenKind.Type },
+            { "data", TokenKind.Data },
+            { "enum", TokenKind.Enum },
+            { "class", TokenKind.Class },
+            { "trait", TokenKind.Trait },
+            { "impl", TokenKind.Impl },
+            { "mod", TokenKind.Mod },
+            { "var", TokenKind.Var },
+            { "let", TokenKind.Let },
+            { "extern", TokenKind.Extern },
+            { "export", TokenKind.Export },
             // modifier
-            { "lazy", Keyword.Lazy },
-            { "foreign", Keyword.Foreign },
-            { "sealed", Keyword.Sealed },
-            { "partial", Keyword.Partial },
-            { "pub", Keyword.Pub },
-            { "priv", Keyword.Priv },
-            { "intern", Keyword.Intern },
+            { "lazy", TokenKind.Lazy },
+            { "foreign", TokenKind.Foreign },
+            { "sealed", TokenKind.Sealed },
+            { "partial", TokenKind.Partial },
+            { "pub", TokenKind.Pub },
+            { "priv", TokenKind.Priv },
+            { "intern", TokenKind.Intern },
             // branch.single
-            { "return", Keyword.Return },
-            { "break", Keyword.Break },
-            { "continue", Keyword.Continue },
-            { "goto", Keyword.Goto },
-            { "resume", Keyword.Resume },
-            { "yield", Keyword.Yield },
+            { "return", TokenKind.Return },
+            { "break", TokenKind.Break },
+            { "continue", TokenKind.Continue },
+            { "goto", TokenKind.Goto },
+            { "resume", TokenKind.Resume },
+            { "yield", TokenKind.Yield },
             // branch.multiple
-            { "if", Keyword.If },
-            { "else", Keyword.Else },
-            { "unless", Keyword.Unless },
-            { "when", Keyword.When },
-            { "match", Keyword.Match },
+            { "if", TokenKind.If },
+            { "else", TokenKind.Else },
+            { "unless", TokenKind.Unless },
+            { "when", TokenKind.When },
+            { "match", TokenKind.Match },
             // branch.loop
-            { "while", Keyword.While },
-            { "until", Keyword.Until },
-            { "loop", Keyword.Loop },
-            { "for", Keyword.For },
-            { "each", Keyword.Each },
-            { "in", Keyword.In },
+            { "while", TokenKind.While },
+            { "until", TokenKind.Until },
+            { "loop", TokenKind.Loop },
+            { "for", TokenKind.For },
+            { "each", TokenKind.Each },
+            { "in", TokenKind.In },
         };
 
         /// <summary>
@@ -141,16 +142,16 @@ namespace ScoreC.Compile.Source
         }
 
         /// <summary>
-        /// Returns the Keyword that the given identifier represents.
-        /// If the identifier does not represent a keyword, returns Keyword.None.
+        /// Returns the TokenKind that the given identifier represents.
+        /// If the identifier does not represent a keyword, returns TokenKind.None.
         /// </summary>
-        /// <param name="identifier">The possible keyword.</param>
+        /// <param name="identifier">The possible TokenKind.</param>
         /// <returns></returns>
-        public static Keyword GetKeywordKind(string identifier)
+        public static TokenKind GetKeywordKind(string identifier)
         {
-            Keyword result;
+            TokenKind result;
             if (!KEYWORD_LOOKUP.TryGetValue(identifier, out result))
-                result = Keyword.None;
+                result = TokenKind.None;
             return result;
         }
 
@@ -160,6 +161,6 @@ namespace ScoreC.Compile.Source
         /// <param name="identifier"></param>
         /// <returns></returns>
         public static bool IsKeyword(string identifier) =>
-            GetKeywordKind(identifier) != Keyword.None;
+            GetKeywordKind(identifier) != TokenKind.None;
     }
 }

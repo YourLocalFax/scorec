@@ -4,7 +4,7 @@
     {
         void Visit(NodeProcedureDeclaration node);
         void Visit(NodeBindingDeclaration node);
-        void Visit(NodeBlock node);
+        void Visit(NodeAssignment node);
 
         #region Literals
         void Visit(NodeBoolLiteral node);
@@ -21,5 +21,6 @@
         void Visit(NodeExplicitCast node);
         void Visit(NodeAutoCast node);
         void Visit(NodeInfix node);
+        void Visit(NodeBlock node);
     }
 }

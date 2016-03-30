@@ -1,91 +1,102 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace ScoreC.Compile.Source
 {
-    using static OperatorKind;
+    using static InfixOperator;
+    using static PrefixOperator;
 
     static class Operator
     {
-        private static readonly Dictionary<string, OperatorKind> operatorMap = new Dictionary<string, OperatorKind>()
+        private static readonly Dictionary<string, InfixOperator> infixOperatorMap = new Dictionary<string, InfixOperator>()
         {
-            { "+",      Plus },
-            { "+=",     PlusEqual },
-            { "++",     PlusPlus },
-            { "++=",    PlusPlusEqual },
-            { "-",      Minus },
-            { "-=",     MinusEqual },
-            { "--",     MinusMinus },
-            { "--=",    MinusMinusEqual },
-            { "->",     MinusGreater },
-            { "*",      Star },
-            { "*=",     StarEqual },
-            { "/",      Slash },
-            { "/=",     SlashEqual },
-            { "//",     SlashSlash },
-            { "//=",    SlashSlashEqual },
-            { "%",      Percent },
-            { "%=",     PercentEqual },
-            { "<",      Less },
-            { "<=",     LessEqual },
-            { "<<",     LessLess },
-            { "<<=",    LessLessEqual },
-            { "<>",     LessGreater },
-            { "<>=",    LessGreaterEqual },
-            { ">",      Greater },
-            { ">=",     GreaterEqual },
-            { ">>",     GreaterGreater },
-            { ">>=",    GreaterGreaterEqual },
-            { "&",      Amp },
-            { "&=",     AmpEqual },
-            { "&&",     AmpAmp },
-            { "&&=",    AmpAmpEqual },
-            { "|",      Pipe },
-            { "|=",     PipeEqual },
-            { "||",     PipePipe },
-            { "||=",    PipePipeEqual },
-            { "^",      Caret },
-            { "^=",     CaretEqual },
-            { "^^",     CaretCaret },
-            { "^^=",    CaretCaretEqual },
-            { "~",      Tilde },
-            { "~=",     TildeEqual },
-            { ":",      Colon },
-            { "::",     ColonColon },
-            { "::=",    ColonColonEqual },
-            { "=",      Equal },
-            { "==",     EqualEqual },
-            { "!",      Bang },
-            { "!=",     BangEqual },
-            { "!<>",    BangLessGreater },
-            { "!<>=",   BangLessGreaterEqual },
-            { "!<",     BangLess },
-            { "!<=",    BangLessEqual },
-            { "!>",     BangGreater },
-            { "!>=",    BangGreaterEqual },
-            { "..",     DotDot },
-            { "??",     QuestionQuestion },
+            // general comparison
+            { "==", Equal },
+            { "!=", NotEqual },
+            
+            // general numeric comparison
+            { ">", Greater },
+            { ">=", GreaterEqual },
+            { "<", Less },
+            { "<=", LessEqual },
+            { "<>", LessGreater },
+            { "<>=", LessGreaterEqual },
+            
+            // floating point comparison
+            { "!<>=", Unordered },
+            { "!<>", UnorderedEqual },
+            { "!<=", UnorderedGreater },
+            { "!<", UnorderedGreaterEqual },
+            { "!>=", UnorderedLess },
+            { "!>", UnorderedLessEqual },
+
+            // general numeric arithmetic
+            { "+", Add },
+            { "-", Subtract },
+            { "*", Multiply },
+            { "/", Divide },
+            { "%", Modulo },
+
+            { "+=", AddEqual },
+            { "-=", SubtractEqual },
+            { "*=", MultiplyEqual },
+            { "/=", DivideEqual },
+            { "%=", ModuloEqual },
+
+            // floating point arithmetic
+            { @"\", IntegerDivide },
+
+            { @"\=", IntegerDivideEqual },
+
+            // bitwise arithmetic
+            { "<<", LeftShift },
+            { ">>", RightShift },
+            { "&", And },
+            { "|", Or },
+            { "~", Xor },
+
+            // boolean logic
+            { "&&", LogicAnd },
+            { "||", LogicOr },
+            { "~~", LogicXor },
         };
 
-        private static readonly string[] operators = operatorMap.Select(pair => pair.Key).ToArray();
-        public static string[] Operators => (string[])operators.Clone();
-
-        public static bool IsOperatorStart(char c)
+        private static readonly Dictionary<string, PrefixOperator> prefixOperatorMap = new Dictionary<string, PrefixOperator>()
         {
-            foreach (var op in operators)
-                // NOTE(kai): This should never fail, but it's not great practice anyway (I think, at least).
-                if (op[0] == c)
-                    return true;
-            return false;
-        }
+            // general numeric arithmetic
+            { "-", Negate },
+            
+            // bitwise arithmetic
+            { "~", Complement },
+            
+            // boolean logic
+            { "!", Not },
+            
+            // memory
+            { "*", Dereference },
+            { "^", AddressOf },
+        };
 
-        public static OperatorKind GetKindFromOperator(string op)
+        public static bool IsInfix(string op) =>
+            infixOperatorMap.ContainsKey(op);
+
+        public static bool IsPrefix(string op) =>
+            prefixOperatorMap.ContainsKey(op);
+
+        public static InfixOperator GetInfix(string op)
         {
 #if DEBUG
-            Debug.Assert(operators.Contains(op), op + " is not a valid Score operator!");
+            Debug.Assert(IsInfix(op), "`" + op + "` is not a valid Score infix operator!");
 #endif
-            return operatorMap[op];
+            return infixOperatorMap[op];
+        }
+
+        public static PrefixOperator GetPrefix(string op)
+        {
+#if DEBUG
+            Debug.Assert(IsPrefix(op), "`" + op + "` is not a valid Score prefix operator!");
+#endif
+            return prefixOperatorMap[op];
         }
     }
 }

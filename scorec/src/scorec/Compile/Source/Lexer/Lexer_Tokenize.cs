@@ -5,6 +5,7 @@ using System.Linq;
 namespace ScoreC.Compile.Source
 {
     using Logging;
+    using System;
 
     sealed partial class Lexer
     {
@@ -67,8 +68,9 @@ namespace ScoreC.Compile.Source
             Debug.Assert(!IsEndOfSource, "No Tokens!! Called at end of source!");
 #endif
             // NOTE(kai): Could use matchest, but this seems to be a little less verbose, though more confusing I guess.
-            if (Current == '/' && HasNext && (Next == '#' || Next == '*'))
+            if (Matches("/#") || Matches("/*"))
             {
+                handleFailureMessage = false;
                 if (Next == '#')
                     EatLineComment();
                 else EatBlockComment();
@@ -78,30 +80,10 @@ namespace ScoreC.Compile.Source
                 return GetToken(GetSpan(), out handleFailureMessage);
             }
 
-            if (Matches("..."))
-            {
-                start = GetSpan();
-                Advance(3);
-                return Token.NewVarargs(GetSpan(start));
-            }
-            else if (Matches("---"))
-            {
-                start = GetSpan();
-                Advance(3);
-                return Token.NewUninitialized(GetSpan(start));
-            }
-
-            if (Current == '.' && HasNext && Next != '.')
-            {
-                var span = GetSpan();
-                Advance();
-                return Token.NewDelimiter(span, '.');
-            }
-
             if (Identifier.IsStart(Current))
                 return GetIdentifierOrKeyword();
-            else if (Operator.IsOperatorStart(Current))
-                return GetOperator();
+            //else if (Operator.IsOperatorStart(Current))
+            //    return GetOperator();
             else if (char.IsDigit(Current))
                 return GetNumericLiteral();
 
@@ -112,12 +94,198 @@ namespace ScoreC.Compile.Source
             case '(': case ')':
             case '[': case ']':
             case '{': case '}':
-            case ',':
+            case ',': case ':':
                     Advance();
                     return Token.NewDelimiter(start, Previous);
+            // TODO(kai): Not sure if we want two different delimiters for strings, might be able to use ` for something else..
             case '`':  return GetStringLiteral(start, '`', true, out handleFailureMessage);
             case '"':  return GetStringLiteral(start, '"', false, out handleFailureMessage);
             case '#': return GetDirective(start, out handleFailureMessage);
+            case '.':
+                Advance();
+                if (Check('.'))
+                {
+                    Advance();
+                    if (Check('.'))
+                    {
+                        Advance();
+                        return Token.NewVarargs(GetSpan(start));
+                    }
+                    return Token.New(GetSpan(start), TokenKind.RangeOf, "..");
+                }
+                return Token.NewDelimiter(start, '.');
+            case '=':
+                Advance();
+                if (Check('='))
+                {
+                    Advance();
+                    return Token.NewOperator(GetSpan(start), "==");
+                }
+                return Token.New(start, TokenKind.Assign, "=");
+            case '>':
+                Advance();
+                if (Check('='))
+                {
+                    Advance();
+                    return Token.NewOperator(GetSpan(start), ">=");
+                }
+                else if (Check('>'))
+                {
+                    Advance();
+                    if (Check('='))
+                    {
+                        Advance();
+                        return Token.NewOperator(GetSpan(start), ">>=");
+                    }
+                    return Token.NewOperator(GetSpan(start), ">>");
+                }
+                return Token.NewOperator(start, ">");
+            case '<':
+                Advance();
+                if (Check('='))
+                {
+                    Advance();
+                    return Token.NewOperator(GetSpan(start), "<=");
+                }
+                else if (Check('<'))
+                {
+                    Advance();
+                    if (Check('='))
+                    {
+                        Advance();
+                        return Token.NewOperator(GetSpan(start), "<<=");
+                    }
+                    return Token.NewOperator(GetSpan(start), "<<");
+                }
+                else if (Check('>'))
+                {
+                    Advance();
+                    if (Check('='))
+                    {
+                        Advance();
+                        return Token.NewOperator(GetSpan(start), "<>=");
+                    }
+                    return Token.NewOperator(GetSpan(start), "<>");
+                }
+                return Token.NewOperator(start, "<");
+            case '!':
+                Advance();
+                if (Check('='))
+                {
+                    Advance();
+                    return Token.NewOperator(GetSpan(start), "!=");
+                }
+                else if (Check('>'))
+                {
+                    Advance();
+                    if (Check('='))
+                    {
+                        Advance();
+                        return Token.NewOperator(GetSpan(start), "!>=");
+                    }
+                    return Token.NewOperator(start, "!>");
+                }
+                else if (Check('<'))
+                {
+                    Advance();
+                    if (Check('='))
+                    {
+                        Advance();
+                        return Token.NewOperator(GetSpan(start), "!<=");
+                    }
+                    else if (Check('>'))
+                    {
+                        Advance();
+                        if (Check('='))
+                        {
+                            Advance();
+                            return Token.NewOperator(GetSpan(start), "!<>=");
+                        }
+                        return Token.NewOperator(GetSpan(start), "!<>");
+                    }
+                    return Token.NewOperator(GetSpan(start), "!<");
+                }
+                return Token.NewOperator(start, "!");
+            case '+':
+                Advance();
+                if (Check('='))
+                {
+                    Advance();
+                    return Token.NewOperator(GetSpan(start), "+=");
+                }
+                return Token.NewOperator(start, "+");
+            case '-':
+                Advance();
+                if (Check('='))
+                {
+                    Advance();
+                    return Token.NewOperator(GetSpan(start), "-=");
+                }
+                else if (Check('>'))
+                {
+                    Advance();
+                    return Token.New(GetSpan(start), TokenKind.GoesTo, "->");
+                }
+                return Token.NewOperator(start, "-");
+            case '*':
+                Advance();
+                if (Check('='))
+                {
+                    Advance();
+                    return Token.NewOperator(GetSpan(start), "*=");
+                }
+                return Token.NewOperator(start, "*");
+            case '/':
+                Advance();
+                if (Check('='))
+                {
+                    Advance();
+                    return Token.NewOperator(GetSpan(start), "/=");
+                }
+                return Token.NewOperator(start, "/");
+            case '%':
+                Advance();
+                if (Check('='))
+                {
+                    Advance();
+                    return Token.NewOperator(GetSpan(start), "%=");
+                }
+                return Token.NewOperator(start, "%");
+            case '\\':
+                Advance();
+                if (Check('='))
+                {
+                    Advance();
+                    return Token.NewOperator(GetSpan(start), @"\=");
+                }
+                return Token.NewOperator(start, @"\");
+            case '&':
+                Advance();
+                if (Check('&'))
+                {
+                    Advance();
+                    return Token.NewOperator(GetSpan(start), "&&");
+                }
+                return Token.NewOperator(start, "&");
+            case '|':
+                Advance();
+                if (Check('|'))
+                {
+                    Advance();
+                    return Token.NewOperator(GetSpan(start), "||");
+                }
+                return Token.NewOperator(start, "|");
+            case '~':
+                Advance();
+                if (Check('~'))
+                {
+                    Advance();
+                    return Token.NewOperator(GetSpan(start), "~~");
+                }
+                return Token.NewOperator(start, "~");
+            case '^':
+                Advance();
+                return Token.NewOperator(GetSpan(start), "^");
             default: break;
             }
 
@@ -142,6 +310,7 @@ namespace ScoreC.Compile.Source
                 Bump();
             // This is the image we've created! Art!
             var image = GetStringFromBuffer();
+            // Console.WriteLine(string.Format("`{0}` is {1}a keyword.", image, Identifier.IsKeyword(image) ? "" : "not "));
             // Create the token woooo
             if (image == "_")
                 return Token.NewWildCard(start);
@@ -275,6 +444,7 @@ namespace ScoreC.Compile.Source
             return Token.NewDirective(GetSpan(start), directive);
         }
 
+        /*
         // URGENT(kai): refactor this plz, pretty ugly
         private Token GetOperator()
         {
@@ -283,10 +453,11 @@ namespace ScoreC.Compile.Source
             Debug.Assert(Operator.IsOperatorStart(Current), "Current character '" + Current + "' is not an operator start.");
 #endif
             var start = GetSpan();
-            var operators = Operator.Operators;
 
             ClearBuffer();
 
+            #region OLD
+            var operators = Operator.Images.ToArray();
             int charCount = 0;
             while (!IsEndOfSource)
             {
@@ -328,8 +499,7 @@ namespace ScoreC.Compile.Source
 
                 ret_token:
 
-                var kind = Operator.GetKindFromOperator(opImage);
-                return Token.NewOperator(GetSpan(start), opImage, kind);
+                return Token.NewOperator(GetSpan(start), opImage);
 
                 cont: ;
             }
@@ -341,7 +511,14 @@ namespace ScoreC.Compile.Source
                 Log.AddError(message);
                 return null;
             }
+            #endregion
+
+            switch (Current)
+            {
+            default: Debug.Assert(false); return null;
+            }
         }
+*/
 
         /// <summary>
         /// Will get a numeric literal, be it int or float, in all formats.. yay.

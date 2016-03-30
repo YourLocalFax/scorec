@@ -1,0 +1,146 @@
+
+/********** Infix Operators **********\
+
+General Comparison:
+
+   ==       : Equal
+   !=       : Not Equal
+   is       : Is of Type
+   as       : Cast to Type
+
+General Numeric Comparison:
+
+   >        : Greater
+   >=       : Greater or Equal
+   <        : Less
+   <=       : Less or Equal
+   <>       : Less or Greater
+   <>=      : Less, Greater or Equal
+
+Floating Point Comparison:
+
+   !=       : Unordered, Less or Greater
+   !<>=     : Unordered
+   !<>      : Unordered or Equal
+   !<=      : Unordered or Greater
+   !<       : Unordered, Greater or Equal
+   !>=      : Unordered or Less
+   !>       : Unordered, Less or Equal
+
+General Numeric Arithmetic:
+
+   +        : Addition
+   -        : Subtraction
+   *        : Multiplication
+   /        : Division
+   %        : Modulo
+
+Floating Point Arithmetic:
+
+   \        : Integer Division
+
+Other Integer Operations:
+
+   ..       : Range Of
+
+Bitwise Arithmetic:
+
+   <<       : Left Shift
+   >>       : Right Shift
+   &        : And
+   |        : Or
+   ~        : Xor
+
+Boolean Logic:
+
+   &&       : And
+   ||       : Or
+   ~~       : Xor
+
+\********** Infix Operators **********/
+
+
+
+
+/********** Prefix Operators **********\
+
+General Numeric Arithmetic:
+
+   -        : Negation
+
+Bitwise Arithmetic:
+
+   ~        : Complement
+
+Boolean Logic:
+
+   !        : Not
+
+Memory Operations:
+
+   *        : Dereference
+   ^        : Address Of
+
+\********** Prefix Operators **********/
+
+
+
+
+
+/********** Block Allocations **********\
+
+Allow struct fields to point into a block of memory rather than separate allocations.
+
+struct Mesh {
+   { /# Make sure these are in a contiguous block of memory :D
+      positions: []vec3
+      indices: []s16
+   }
+}
+
+Not quite sure how this'd work just yet, though.
+
+\********** Block Allocations **********/
+
+
+
+
+
+/********** Parameterized Types **********\
+
+struct Vec(dims: s32) {
+   values: [dims] r32
+   /# Would probably be a generated type, provide indexes into the dims array.
+}
+
+\********** Parameterized Types **********/
+
+
+
+
+
+/********** Generated Types and Methods **********\
+
+struct Vec(dims: s32) #generate {
+   /# Generate the body here plz
+}
+
+\********** Generated Types and Methods **********/
+
+
+
+
+
+/********** Custom Allocators **********\
+
+Should be able to support things like reference counts and GC to some degree, maybe.
+
+\********** Custom Allocators **********/
+
+
+
+
+
+/********** Captures **********\
+
+\********** Captures **********/

@@ -1,0 +1,151 @@
+
+/# unicode.score
+
+/*
+
+FACTS:
+
+* Characters in Score are unsigned 32 bit integers.
+* The default string type in Score is encoded as UTF-8.
+
+*/
+
+#region Conversions
+
+proc utf8_code_point_count(value: []u8) = #no_bounds_check {
+   var result : s64 = 0
+   var offset : u64 = 0
+
+   while offset < value.count {
+      if value[offset] & 0xC0 != 0x80
+         result += 1
+      offset += 1
+   }
+
+   result
+}
+
+/*
+
+wchar_t utf8_char_to_ucs2(const unsigned char *utf8)
+{
+  if(!(utf8[0] & 0x80))      // 0xxxxxxx
+    return (wchar_t)utf8[0];
+  else if((utf8[0] & 0xE0) == 0xC0)  // 110xxxxx
+    return (wchar_t)(((utf8[0] & 0x1F) << 6) | (utf8[1] & 0x3F));
+  else if((utf8[0] & 0xF0) == 0xE0)  // 1110xxxx
+    return (wchar_t)(((utf8[0] & 0x0F) << 12) | ((utf8[1] & 0x3F) << 6) | (utf8[2] & 0x3F));
+  else
+    return ERROR;  // uh-oh, UCS-2 can't handle code points this high
+}
+
+
+
+
+static void check(char c) {
+  if ((c & 0xc0) != 0xc0) RAISE(Bad_UTF8);
+}
+
+uint16_t Utf8_decode(char **p) { // return code point and advance *p
+  char *s = *p;
+  if ((s[0] & 0x80) == 0) {
+    (*p)++;
+    return s[0];
+  } else if ((s[0] & 0x40) == 0) {
+    RAISE (Bad_UTF8);
+    return ~0; // prevent compiler warning
+  } else if ((s[0] & 0x20) == 0) {
+    if ((s[0] & 0xf0) != 0xe0) RAISE (Bad_UTF8);
+    check(s[1]); check(s[2]);
+    (*p) += 3;
+    return ((s[0] & 0x0f) << 12)
+         + ((s[1] & 0x3f) <<  6)
+         + ((s[2] & 0x3f));
+  } else {
+    check(s[1]);
+    (*p) += 2;
+    return ((s[0] & 0x1f) << 6)
+         + ((s[1] & 0x3f));
+  }
+}
+
+*/
+
+proc utf8_next_code_point(value: []u8, offset: ^u64) -> u32 = {
+
+/*
+
+Bits of     First       Last        Bytes        Byte 1   Byte 2   Byte 3   Byte 4   Byte 5   Byte 6
+code point  code point  code point  in sequence
+ 
+ 7          U+0000      U+007F      1            0xxxxxxx
+11          U+0080      U+07FF      2            110xxxxx 10xxxxxx
+16          U+0800      U+FFFF      3            1110xxxx 10xxxxxx 10xxxxxx
+21          U+10000     U+1FFFFF    4            11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+26          U+200000    U+3FFFFFF   5            111110xx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx
+31          U+4000000   U+7FFFFFFF  6            1111110x 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx
+
+0xC0 = 1100 0000
+0x80 = 1000 0000
+0x40 = 0100 0000
+0x20 = 0010 0000
+0x10 = 0001 0000
+0x08 = 0000 1000
+0x04 = 0000 0100
+0x02 = 0000 0010
+0x01 = 0000 0001
+
+*/
+
+   /# This will return values greater than U+10FFFF just because
+
+   let b0 = value[offset]
+
+   /# == 0xxxxxxx
+   if b0 & 0x80 == 0 {
+      offset += 1
+      return b0 as u32
+   }
+   /# == 10xxxxxx, which is invalid as a first byte
+   else if b0 & 0x40 == 0
+      return ~0
+   /# == 110xxxxx, 2 bytes total
+   else if b0 & 0x20 == 0 {
+      let b1 = value[offset + 1]
+      if b1 & 0xC0 != 0x80  return ~0
+      offset += 2
+      return ((b1 & 0x1F) << 6) +
+             ( b0 & 0x3F) as u32
+   }
+   /# == 1110xxxx, 3 bytes total
+   else if b0 & 0x10 == 0 {
+      let b1 = value[offset + 1]
+      let b2 = value[offset + 2]
+      if b1 & 0xC0 != 0x80 || b2 & 0xC0 != 0x80  return ~0
+      offset += 3
+      return ((b2 & 0x0F) << 12) +
+             ( b1 & 0x3F) <<  6) +
+             ( b0 & 0x3F) as u32
+   }
+   /# == 11110xxx, 4 bytes total
+   else if b0 & 0x08 == 0 {
+      let b1 = value[offset + 1]
+      let b2 = value[offset + 2]
+      let b3 = value[offset + 3]
+      /# TODO(kai): Look at syntax for this plz
+   /# if (b1 &! b2 &! b3) & 0xC0 !+ 0x80  return ~0
+      if b1 & 0xC0 != 0x80 || b2 & 0xC0 != 0x80 || b3 & 0xC0 != 0x80  return ~0
+      offset += 4
+      return ((b3 & 0x07) << 18) +
+             ( b2 & 0x3F) << 12) +
+             ( b1 & 0x3F) <<  6) +
+             ( b0 & 0x3F) as u32
+   }
+}
+
+proc utf8_to_utf32(value: []u8) = {
+   let cp_count = utf8_code_point_count(value)
+   let result = new [cp_count] u32
+}
+
+#endregion

@@ -5,6 +5,7 @@ namespace ScoreC.Compile.Logging
 {
     using Source;
 
+    // FIXME(kai): Remove this entirely...
     sealed partial class Message
     {
         #region Lex Stage Errors
@@ -167,6 +168,10 @@ namespace ScoreC.Compile.Logging
                 literalString.Image);
             return new Message(MessageCode.InvalidCharacterLiteral, literalString.Span, description);
         }
+
+        public static Message InvalidAssignmentTarget(Span location) =>
+            new Message(MessageCode.InvalidAssignmentTarget, location,
+                "Expression is not an l-value and cannot be assigned to.");
         #endregion
     }
 }

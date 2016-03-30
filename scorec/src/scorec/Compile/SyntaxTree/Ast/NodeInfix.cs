@@ -1,18 +1,22 @@
 ﻿namespace ScoreC.Compile.SyntaxTree
 {
     using Source;
+    using System.Diagnostics;
 
     class NodeInfix : NodeExpression
     {
         public override Span Start => Left.Start;
 
-        public OperatorKind Operator;
+        public InfixOperator Operator;
 
         public NodeExpression Left;
         public NodeExpression Right;
 
-        public NodeInfix(OperatorKind op, NodeExpression left, NodeExpression right)
+        public NodeInfix(InfixOperator op, NodeExpression left, NodeExpression right)
         {
+#if DEBUG
+            Debug.Assert(!op.IsAssignment());
+#endif
             Operator = op;
             Left = left;
             Right = right;

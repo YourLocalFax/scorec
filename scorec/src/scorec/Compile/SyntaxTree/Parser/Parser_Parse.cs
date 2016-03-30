@@ -6,6 +6,8 @@ using System.Text;
 
 namespace ScoreC.Compile.SyntaxTree
 {
+    // FIXME(kai): Operator.GetInfix() might be great to be wrapped up in Token as well, looks ugly on its own here.
+
     using Logging;
     using Source;
     using System.Globalization;
@@ -65,34 +67,70 @@ namespace ScoreC.Compile.SyntaxTree
             Debug.Assert(!IsEndOfSource, "No Tokens!! Called at end of source!");
 #endif
 
-            // This control flow is sad, plz help
-
             switch (Current.Kind)
             {
-            case TokenKind.Keyword:
-                switch (Current.Keyword)
+            case TokenKind.Extern:
+                Advance();
+                if (!Check(TokenKind.Proc))
                 {
-                case Keyword.Extern:
-                    bool is_extern = true;
-                    Advance();
-                    goto in_keyword_proc;
-
-                case Keyword.Proc:
-                    is_extern = false;
-                in_keyword_proc:
-                    return ParseProcedureDeclaration(is_extern, out handleFailureMessage);
-
-                case Keyword.Let:
-                case Keyword.Var:
-                    return ParseBindingDeclaration(out handleFailureMessage);
-
-                default: goto in_default;
+                    handleFailureMessage = false;
+                    Message message;
+                    if (IsEndOfSource)
+                        message = Message.UnexpectedEndOfSource(Previous.Span,
+                            "Expected `proc` to start procedure declaration, found end of source.");
+                    else message = Message.UnexpectedToken(Current.Span,
+                       "Expected `proc` to start procedure declaration, found `" + Current.Image + "`.");
+                    Log.AddError(message);
+                    return null;
                 }
+                return ParseProcedureDeclaration(true, out handleFailureMessage);
+
+            case TokenKind.Proc:
+                return ParseProcedureDeclaration(false, out handleFailureMessage);
+
+            case TokenKind.Let:
+            case TokenKind.Var:
+                return ParseBindingDeclaration(out handleFailureMessage);
 
             default:
-            in_default:
                 var expr = ParseExpression(out handleFailureMessage);
-                // TODO(kai): Assignment statement here plz
+
+                if (expr == null)
+                    return null;
+
+                if (Check(TokenKind.Assign))
+                {
+                    Advance(); // `=`
+
+                    var value = ParseExpression(out handleFailureMessage);
+                    if (value == null)
+                    {
+                        // TODO(kai): This format is used everywhere in the parser, should be factored into a method
+                        if (handleFailureMessage)
+                        {
+                            handleFailureMessage = false;
+                            Message message;
+                            if (IsEndOfSource)
+                                message = Message.UnexpectedEndOfSource(Previous.Span,
+                                    "Expected expression following assignment operator, found end of source.");
+                            else message = Message.UnexpectedToken(Previous.Span,
+                               string.Format("Expected expression following assignment operator, found `{0}`", Current.Image));
+                            Log.AddError(message);
+                        }
+                        return null;
+                    }
+
+                    if (!expr.IsLValue)
+                    {
+                        handleFailureMessage = false;
+                        var message = Message.InvalidAssignmentTarget(expr.Start);
+                        Log.AddError(message);
+                        return null;
+                    }
+
+                    return new NodeAssignment(expr, value);
+                }
+
                 return expr;
             }
         }
@@ -113,7 +151,7 @@ namespace ScoreC.Compile.SyntaxTree
             // This condition could probably be a local function (if I could factor that >= vs > into something I guess)
             while (!IsEndOfSource &&
                    Check(TokenKind.Operator) &&
-                   Current.OperatorKind.Precedence() >= minPrecedence &&
+                   Operator.GetInfix(Current.Image).Precedence() >= minPrecedence &&
                    Current.Span.Line == Previous.Span.EndLine)
             {
                 var opToken = Current;
@@ -139,16 +177,16 @@ namespace ScoreC.Compile.SyntaxTree
                 // Make sure we don't have a semi colon.
                 else
                 {
-                    var thisPrec = opToken.OperatorKind.Precedence();
+                    var thisPrec = Operator.GetInfix(opToken.Image).Precedence();
                     // Basically we do the same as above
                     // This time the precedence must be GREATER, but not equal.
                     while (!IsEndOfSource &&
                            Check(TokenKind.Operator) &&
-                           Current.OperatorKind.Precedence() > thisPrec &&
+                           Operator.GetInfix(Current.Image).Precedence() > thisPrec &&
                            Current.Span.Line == Previous.Span.EndLine)
                     {
                         // Our right side is now the result of the infix operation.
-                        rhs = ParseInfixOperations(out handleFailureMessage, rhs, Current.OperatorKind.Precedence());
+                        rhs = ParseInfixOperations(out handleFailureMessage, rhs, Operator.GetInfix(Current.Image).Precedence());
                         if (rhs == null)
                         {
                             if (handleFailureMessage)
@@ -167,7 +205,7 @@ namespace ScoreC.Compile.SyntaxTree
                         }
                     }
                 }
-                lhs = new NodeInfix(opToken.OperatorKind, lhs, rhs);
+                lhs = new NodeInfix(Operator.GetInfix(opToken.Image), lhs, rhs);
             }
             return lhs;
         }
@@ -186,13 +224,14 @@ namespace ScoreC.Compile.SyntaxTree
 
             NodeExpression result = null;
 
-            if (Check(Keyword.True) || Check(Keyword.False))
+            if (Check(TokenKind.True) || Check(TokenKind.False))
             {
                 var tkBoolLiteral = Current;
                 Advance();
                 result = new NodeBoolLiteral(tkBoolLiteral);
             }
-            else if (Check(Keyword.Auto))
+            /* TODO(kai): This isn't a part of the base language, but it already exists. Add it back later.
+            else if (Check(TokenKind.Auto))
             {
                 var start = Current.Span;
                 Advance();
@@ -201,6 +240,7 @@ namespace ScoreC.Compile.SyntaxTree
                     return null;
                 return new NodeAutoCast(start, target);
             }
+            */
             else if (CheckDirective("char"))
             {
                 var start = Current.Span;
@@ -459,7 +499,7 @@ namespace ScoreC.Compile.SyntaxTree
             if (IsEndOfSource)
                 return;
 
-            if (Check(Keyword.As))
+            if (Check(TokenKind.As))
             {
                 var tkAs = Current;
                 Advance(); // `as`
@@ -521,10 +561,10 @@ namespace ScoreC.Compile.SyntaxTree
             Debug.Assert(!IsEndOfSource, "you're at the end of the source, buddy, stahp.");
 #endif
 
-            if (Check(OperatorKind.Star))
+            if (CheckOperator("*"))
             {
                 var tkStar = Current;
-                Advance();
+                Advance("*");
                 var type = ParseTypeInfo(out handleFailureMessage);
                 if (type == null)
                     return null;
@@ -561,7 +601,7 @@ namespace ScoreC.Compile.SyntaxTree
                         while (!Check(TokenKind.CloseBracket))
                         {
                             Token tkName;
-                            if (Check(TokenKind.Identifier) && CheckNext(OperatorKind.Colon))
+                            if (Check(TokenKind.Identifier) && CheckNext(TokenKind.Colon))
                             {
                                 tkName = Current;
                                 Advance(2);
@@ -628,7 +668,7 @@ namespace ScoreC.Compile.SyntaxTree
                             parameters.Add(new ProcedureTypeInfo.Parameter(names[i]?.Identifier ?? null, types[i]));
 
                         // Is this actually a procedure type?
-                        if (Check(OperatorKind.MinusGreater))
+                        if (Check(TokenKind.GoesTo))
                         {
                             var tkArrow = Current;
                             Advance(); // `->`
@@ -690,11 +730,11 @@ namespace ScoreC.Compile.SyntaxTree
         {
             handleFailureMessage = true;
 #if DEBUG
-            Debug.Assert(Check(Keyword.Let) || Check(Keyword.Var), "Expected `let` or `var` to start binding declaration.");
+            Debug.Assert(Check(TokenKind.Let) || Check(TokenKind.Var), "Expected `let` or `var` to start binding declaration.");
 #endif
 
             var start = Current.Span;
-            var bindingKind = Current.Keyword;
+            var bindingKind = Current.Kind;
 
             Advance(); // `let` or `var`
 
@@ -715,7 +755,7 @@ namespace ScoreC.Compile.SyntaxTree
             Advance();
 
             TypeInfo typeInfo = null;
-            if (Check(OperatorKind.Colon))
+            if (Check(TokenKind.Colon))
             {
                 Advance();
 
@@ -736,7 +776,7 @@ namespace ScoreC.Compile.SyntaxTree
             }
 
             NodeExpression value = null;
-            if (Check(OperatorKind.Equal))
+            if (Check(TokenKind.Assign))
             {
                 Advance();
 
@@ -776,7 +816,7 @@ namespace ScoreC.Compile.SyntaxTree
 
             handleFailureMessage = true;
 #if DEBUG
-            Debug.Assert(Check(Keyword.Proc), "Expected `proc` to start procedure declaration.");
+            Debug.Assert(Check(TokenKind.Proc), "Expected `proc` to start procedure declaration.");
 #endif
 
             var kwProc = Current;
@@ -881,7 +921,7 @@ namespace ScoreC.Compile.SyntaxTree
             handleFailureMessage = true;
 
             // Check for `=`:
-            if (Check(OperatorKind.Equal))
+            if (Check(TokenKind.Assign))
             {
                 var tkEqual = Current;
                 Advance(); // `=`

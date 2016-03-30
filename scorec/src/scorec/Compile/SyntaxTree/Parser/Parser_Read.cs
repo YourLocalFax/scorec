@@ -4,6 +4,7 @@ namespace ScoreC.Compile.SyntaxTree
 {
     using Logging;
     using Source;
+    using System.Diagnostics;
 
     sealed partial class Parser
     {
@@ -68,6 +69,32 @@ namespace ScoreC.Compile.SyntaxTree
         private void Advance() =>
             tokenOffset++;
 
+        private void Advance(string image)
+        {
+#if DEBUG
+            Debug.Assert(!IsEndOfSource);
+            Debug.Assert(CheckOperator(image));
+#endif
+            if (Current.Image == image)
+                Advance();
+            else
+            {
+                // URGENT(kai): If we don't need this we can leave it commented just in case, but should still remove this method.
+                throw new Exception("DO WE NEED THIS OR NAH. IF NOT REMOVE THIS METHOD AND CHANGE .StartsWith AND CHANGE IT TO ==");
+
+                var oldToken = Current;
+
+                var newCurrent = Token.NewOperator(oldToken.Span, image);
+
+                var newSpan = new Span(oldToken.Span.Map, oldToken.Span.Line, oldToken.Span.Column + image.Length, oldToken.Span.EndLine, oldToken.Span.EndColumn);
+                var newImage = oldToken.Image.Substring(image.Length);
+                var newNext = Token.NewOperator(newSpan, newImage);
+
+                Map.Tokens[tokenOffset] = newCurrent;
+                Map.Tokens.Insert(tokenOffset + 1, newNext);
+            }
+        }
+
         private void Advance(int count)
         {
             for (var i = 0; i < count; i++)
@@ -78,25 +105,26 @@ namespace ScoreC.Compile.SyntaxTree
         private bool Check(TokenKind tokenKind) =>
             !IsEndOfSource && Current.Kind == tokenKind;
 
-        private bool Check(Keyword keyword) =>
-            !IsEndOfSource && Current.Keyword == keyword;
+        private bool CheckOperator(string image)
+        {
+#if DEBUG
+            Debug.Assert(!string.IsNullOrEmpty(image));
+#endif
+            return !IsEndOfSource && Current.IsOperator && Current.Image == image;
+        }
 
-        private bool Check(OperatorKind operatorKind) =>
-            !IsEndOfSource && Current.OperatorKind == operatorKind;
-
-        private bool CheckDirective(string directive) =>
-            !IsEndOfSource && Current.Kind == TokenKind.Directive && Current.Directive == directive;
+        private bool CheckDirective(string directive)
+        {
+#if DEBUG
+            Debug.Assert(!string.IsNullOrEmpty(directive));
+#endif
+            return !IsEndOfSource && Current.Kind == TokenKind.Directive && Current.Directive == directive;
+        }
         #endregion
 
         #region bool CheckNext(kind)
         private bool CheckNext(TokenKind tokenKind) =>
             HasNext && Next.Kind == tokenKind;
-
-        private bool CheckNext(Keyword keyword) =>
-            HasNext && Next.Keyword == keyword;
-
-        private bool CheckNext(OperatorKind operatorKind) =>
-            HasNext && Next.OperatorKind == operatorKind;
         #endregion
 
         #region bool Expect(kind)
@@ -107,44 +135,12 @@ namespace ScoreC.Compile.SyntaxTree
             Advance();
             return true;
         }
-
-        private bool Expect(Keyword keyword)
-        {
-            if (!Check(keyword))
-                return false;
-            Advance();
-            return true;
-        }
-
-        private bool Expect(OperatorKind operatorKind)
-        {
-            if (!Check(operatorKind))
-                return false;
-            Advance();
-            return true;
-        }
         #endregion
 
         #region bool ExpectOrError(kind, message)
         private bool ExpectOrError(TokenKind tokenKind, Message message)
         {
             if (Expect(tokenKind))
-                return true;
-            Log.AddError(message);
-            return false;
-        }
-
-        private bool ExpectOrError(Keyword keyword, Message message)
-        {
-            if (Expect(keyword))
-                return true;
-            Log.AddError(message);
-            return false;
-        }
-
-        private bool ExpectOrError(OperatorKind operatorKind, Message message)
-        {
-            if (Expect(operatorKind))
                 return true;
             Log.AddError(message);
             return false;

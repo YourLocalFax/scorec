@@ -23,6 +23,7 @@ namespace ScoreC.Compile.Logging
         ExpressionParseFailed = 0x1007,
         UnexpectedToken = 0x1008,
         InvalidCharacterLiteral = 0x1009,
+        InvalidAssignmentTarget = 0x100A,
         #endregion
     }
 

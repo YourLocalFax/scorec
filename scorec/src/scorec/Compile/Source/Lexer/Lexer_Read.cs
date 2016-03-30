@@ -91,9 +91,12 @@ namespace ScoreC.Compile.Source
                 Advance();
         }
 
+        private bool Check(char c) =>
+            !IsEndOfSource && Current == c;
+
         private bool Expect(char c)
         {
-            if (IsEndOfSource || Current != c)
+            if (!Check(c))
                 return false;
             Advance();
             return true;

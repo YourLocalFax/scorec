@@ -7,9 +7,20 @@ namespace ScoreC.Compile.Source
     sealed class Token
     {
         #region Static Constructors
+        public static Token New(Span span, TokenKind kind, string image)
+        {
+#if DEBUG
+            Debug.Assert(!string.IsNullOrEmpty(image), "Invalid null image!");
+#endif
+            var result = new Token(span, kind);
+            result.Image = image;
+            return result;
+        }
+
         public static Token NewIdentifier(Span span, string identifier)
         {
 #if DEBUG
+            Debug.Assert(!string.IsNullOrEmpty(identifier), "Invalid null identifier!");
             Debug.Assert(Source.Identifier.IsValid(identifier), "Given image isn't a valid identifier!");
 #endif
             var result = new Token(span, TokenKind.Identifier);
@@ -23,8 +34,7 @@ namespace ScoreC.Compile.Source
 #if DEBUG
             Debug.Assert(Source.Identifier.IsKeyword(keyword), "Given image isn't a valid keyword!");
 #endif
-            var result = new Token(span, TokenKind.Keyword);
-            result.Keyword = Source.Identifier.GetKeywordKind(keyword);
+            var result = new Token(span, Source.Identifier.GetKeywordKind(keyword));
             result.Image = keyword;
             return result;
         }
@@ -50,11 +60,10 @@ namespace ScoreC.Compile.Source
             return result;
         }
 
-        public static Token NewOperator(Span span, string image, OperatorKind kind)
+        public static Token NewOperator(Span span, string image)
         {
             var result = new Token(span, TokenKind.Operator);
             result.Image = image;
-            result.OperatorKind = kind;
             return result;
         }
 
@@ -63,15 +72,16 @@ namespace ScoreC.Compile.Source
             TokenKind kind = TokenKind.None;
             switch (image)
             {
-                case '(': kind = TokenKind.OpenBracket; break;
-                case ')': kind = TokenKind.CloseBracket; break;
-                case '[': kind = TokenKind.OpenSquareBracket; break;
-                case ']': kind = TokenKind.CloseSquareBracket; break;
-                case '{': kind = TokenKind.OpenCurlyBracket; break;
-                case '}': kind = TokenKind.CloseCurlyBracket; break;
-                case ',': kind = TokenKind.Comma; break;
-                case '.': kind = TokenKind.Dot; break;
-                default:
+            case '(': kind = TokenKind.OpenBracket; break;
+            case ')': kind = TokenKind.CloseBracket; break;
+            case '[': kind = TokenKind.OpenSquareBracket; break;
+            case ']': kind = TokenKind.CloseSquareBracket; break;
+            case '{': kind = TokenKind.OpenCurlyBracket; break;
+            case '}': kind = TokenKind.CloseCurlyBracket; break;
+            case ',': kind = TokenKind.Comma; break;
+            case ':': kind = TokenKind.Colon; break;
+            case '.': kind = TokenKind.Dot; break;
+            default:
 #if DEBUG
                     Debug.Assert(false, "Given character is not a delimiter!!");
 #endif
@@ -130,11 +140,6 @@ namespace ScoreC.Compile.Source
         /// The kind of Token this is.
         /// </summary>
         public TokenKind Kind { get; private set; }
-        /// <summary>
-        /// The kind of operator this Token represents.
-        /// This will be OperatorKind.None if this Token does not represent an operator.
-        /// </summary>
-        public OperatorKind OperatorKind { get; private set; } = OperatorKind.None;
         #endregion
 
         #region Literal Values
@@ -144,15 +149,10 @@ namespace ScoreC.Compile.Source
         /// </summary>
         public string Identifier { get; private set; } = null;
         /// <summary>
-        /// The keyword this Token represents.
-        /// This will be Keyword.None if this Token does not represent a Keyword.
-        /// </summary>
-        public Keyword Keyword { get; private set; } = Keyword.None;
-        /// <summary>
         /// The bool value this Token represents.
         /// This will be false if this Token does not represent a bool literal.
         /// </summary>
-        public bool Bool => Keyword == Keyword.True;
+        public bool Bool => Kind == TokenKind.True;
         /// <summary>
         /// The numeric literal this Token represents.
         /// This is used for both integers and floats.
@@ -189,6 +189,10 @@ namespace ScoreC.Compile.Source
         /// If this is true, the Keyword property will not return KeywordKind.None.
         /// </summary>
         public bool IsKeyword => Kind == TokenKind.Keyword;
+        /// <summary>
+        /// Determines if this Token is an operator Token.
+        /// </summary>
+        public bool IsOperator => Kind == TokenKind.Operator;
         #endregion
 
         private Token(Span span, TokenKind kind)

@@ -91,6 +91,7 @@ namespace ScoreC
             {
                 log.PrintErrors();
                 Exit();
+                return;
             }
 
             Parser.Parse(log, map);
@@ -99,6 +100,7 @@ namespace ScoreC
             {
                 log.PrintErrors();
                 Exit();
+                return;
             }
 
             //*
@@ -119,11 +121,11 @@ namespace ScoreC
 
         private static void Exit()
         {
-//#if DEBUG
+#if DEBUG
             Console.Write("Press any key to exit...");
             Console.ReadKey();
             Environment.Exit(0);
-//#endif
+#endif
         }
     }
 }
