@@ -91,6 +91,9 @@ namespace ScoreC.Compile.Source
             return infixOperatorMap[op];
         }
 
+        public static int GetPrecedence(string op) =>
+            GetInfix(op).Precedence();
+
         public static PrefixOperator GetPrefix(string op)
         {
 #if DEBUG

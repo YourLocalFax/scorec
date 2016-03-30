@@ -151,7 +151,8 @@ namespace ScoreC.Compile.SyntaxTree
             // This condition could probably be a local function (if I could factor that >= vs > into something I guess)
             while (!IsEndOfSource &&
                    Check(TokenKind.Operator) &&
-                   Operator.GetInfix(Current.Image).Precedence() >= minPrecedence &&
+                   Operator.IsInfix(Current.Image) &&
+                   Operator.GetPrecedence(Current.Image) >= minPrecedence &&
                    Current.Span.Line == Previous.Span.EndLine)
             {
                 var opToken = Current;
@@ -177,12 +178,13 @@ namespace ScoreC.Compile.SyntaxTree
                 // Make sure we don't have a semi colon.
                 else
                 {
-                    var thisPrec = Operator.GetInfix(opToken.Image).Precedence();
+                    var thisPrec = Operator.GetPrecedence(opToken.Image);
                     // Basically we do the same as above
                     // This time the precedence must be GREATER, but not equal.
                     while (!IsEndOfSource &&
                            Check(TokenKind.Operator) &&
-                           Operator.GetInfix(Current.Image).Precedence() > thisPrec &&
+                           Operator.IsInfix(Current.Image) &&
+                           Operator.GetPrecedence(Current.Image) > thisPrec &&
                            Current.Span.Line == Previous.Span.EndLine)
                     {
                         // Our right side is now the result of the infix operation.
