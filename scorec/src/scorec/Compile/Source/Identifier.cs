@@ -20,11 +20,7 @@ namespace ScoreC.Compile.Source
             // declaration
             { "proc", TokenKind.Proc },
             { "type", TokenKind.Type },
-            { "data", TokenKind.Data },
-            { "enum", TokenKind.Enum },
-            { "class", TokenKind.Class },
-            { "trait", TokenKind.Trait },
-            { "impl", TokenKind.Impl },
+            { "struct", TokenKind.Struct },
             { "mod", TokenKind.Mod },
             { "var", TokenKind.Var },
             { "let", TokenKind.Let },

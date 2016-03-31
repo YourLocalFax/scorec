@@ -43,11 +43,7 @@
         // declaration
         Proc,
         Type,
-        Data,
-        Enum,
-        Class,
-        Trait,
-        Impl,
+        Struct,
         Mod,
         Var,
         Let,

@@ -101,6 +101,8 @@ namespace ScoreC.Compile.SyntaxTree
             case TokenKind.Var:
                 return ParseBindingDeclaration(out handleFailureMessage);
 
+            case TokenKind.Struct:
+
             default:
                 var expr = ParseExpression(out handleFailureMessage);
 
