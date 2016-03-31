@@ -105,13 +105,16 @@
     <Compile Include="Compile\SyntaxTree\Ast\Ast.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\Binding.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\Node.cs" />
+    <Compile Include="Compile\SyntaxTree\Ast\NodeOperatorAssignment.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeAssignment.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeBindingDeclaration.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeBlock.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeAutoCast.cs" />
+    <Compile Include="Compile\SyntaxTree\Ast\NodeDefer.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeExplicitCast.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeExpression.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeBoolLiteral.cs" />
+    <Compile Include="Compile\SyntaxTree\Ast\NodePrefix.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeInfix.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeInvocation.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeFieldIndex.cs" />

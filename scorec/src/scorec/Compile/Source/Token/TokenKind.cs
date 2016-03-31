@@ -42,6 +42,7 @@
         Auto,
         New,
         Delete,
+        Defer,
         // declaration
         Proc,
         Type,

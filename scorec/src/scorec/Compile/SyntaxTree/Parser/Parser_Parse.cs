@@ -125,15 +125,30 @@ namespace ScoreC.Compile.SyntaxTree
                     return new NodeDelete(start, target);
                 }
 
+            case TokenKind.Defer:
+                {
+                    var start = Current.Span;
+                    Advance(); // `delete`
+
+                    var target = GetNode(out handleFailureMessage);
+                    if (target == null)
+                        return null;
+
+                    // TODO(kai): Check that the given statements are valid defer targets
+
+                    return new NodeDefer(start, target);
+                }
+
             default:
                 var expr = ParseExpression(out handleFailureMessage);
 
                 if (expr == null)
                     return null;
 
-                if (Check(TokenKind.Assign))
+                if (Check(TokenKind.Assign) || (Check(TokenKind.Operator) && Operator.IsInfix(Current.Image) && Operator.GetInfix(Current.Image).IsAssignment()))
                 {
-                    Advance(); // `=`
+                    var op = Current;
+                    Advance(); // `=` || assignOp
 
                     var value = ParseExpression(out handleFailureMessage);
                     if (value == null)
@@ -156,7 +171,9 @@ namespace ScoreC.Compile.SyntaxTree
                         return null;
                     }
 
-                    return new NodeAssignment(expr, value);
+                    if (op.Kind == TokenKind.Assign)
+                        return new NodeAssignment(expr, value);
+                    else return new NodeOperatorAssignment(Operator.GetInfix(op.Image).AssignmentToInfix(), expr, value);
                 }
 
                 return expr;
@@ -308,6 +325,33 @@ namespace ScoreC.Compile.SyntaxTree
             {
                 switch (Current.Kind)
                 {
+                case TokenKind.Operator:
+                    {
+                        var op = Current;
+                        Advance(); // operator
+
+                        var target = ParsePrimaryExpression(out handleFailureMessage);
+
+                        if (!Operator.IsPrefix(op.Image))
+                        {
+                            handleFailureMessage = false;
+                            Log.AddError(op.Span,
+                                         "`{0}` is not a valid prefix operator.",
+                                         op.Image);
+                            result = null;
+                        }
+                        else
+                        {
+                            if (target == null)
+                            {
+                                // TODO(kai): handle error messages for prefix expressions
+                                result = null;
+                            }
+                            else result = new NodePrefix(op.Span, Operator.GetPrefix(op.Image), target);
+                        }
+
+                        break;
+                    }
                 case TokenKind.Integer:
                     var tkIntegerLiteral = Current;
                     Advance();
@@ -333,22 +377,19 @@ namespace ScoreC.Compile.SyntaxTree
                         var start = Current.Span;
                         Advance(); // `{`
 
-                        // var success = true;
                         var body = new List<Node>();
                         while (!IsEndOfSource && !Check(TokenKind.CloseCurlyBracket))
                         {
                             var node = GetNode(out handleFailureMessage);
                             if (node != null)
                                 body.Add(node);
-                            else Advance();
-                            // else success = false;
                         }
 
                         if (!Check(TokenKind.CloseCurlyBracket))
                         {
                             handleFailureMessage = false;
                             Log.AddError(EoSOrCurrentSpan(),
-                                         "Expected `}` to close this block, found {0}.",
+                                         "Expected `}}` to close this block, found {0}.",
                                          EoSOrCurrentToken());
                             result = null;
                             break;

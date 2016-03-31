@@ -1,5 +1,6 @@
 ﻿namespace ScoreC.Compile.SyntaxTree
 {
+    /*
     using Source;
 
     class NodeAutoCast : NodeExpression
@@ -17,4 +18,5 @@
 
         public override void Accept(IAstVisitor visitor) => visitor.Visit(this);
     }
+    */
 }

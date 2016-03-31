@@ -19,6 +19,7 @@ namespace ScoreC.Compile.Source
             { "auto", TokenKind.Auto },
             { "new", TokenKind.New },
             { "delete", TokenKind.Delete },
+            { "defer", TokenKind.Defer },
             // declaration
             { "proc", TokenKind.Proc },
             { "type", TokenKind.Type },
