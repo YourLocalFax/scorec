@@ -1,9 +1,14 @@
 
-/# use ffi
-
+/*
 /# FOR DEMONSTRATION, THESE AREN'T ALWAYS RIGHT
 type cchar    = i8
 type cwchar_t = i16
 
 type cstring  = ^cchar
 type cwstring = ^cwchar_t
+*/
+
+/# int puts(char *)
+extern proc puts(*s8) -> s32
+/# int putchar(int)
+extern proc putchar(s32) -> s32

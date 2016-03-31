@@ -105,6 +105,8 @@
     <Compile Include="Compile\SyntaxTree\Ast\Ast.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\Binding.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\Node.cs" />
+    <Compile Include="Compile\SyntaxTree\Ast\NodeWhileUntil.cs" />
+    <Compile Include="Compile\SyntaxTree\Ast\NodeIfUnless.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeOperatorAssignment.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeAssignment.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeBindingDeclaration.cs" />

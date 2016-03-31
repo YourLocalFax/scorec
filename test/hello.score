@@ -1,15 +1,12 @@
 
-/# int puts(char *)
-extern proc puts(*s8) -> s32
-/# int putchar(int)
-extern proc putchar(s32) -> s32
+#load "path/name.score"
 
 struct vec2 {
    x : r32
    y : r32
 }
 
-proc +(a : vec2, b : vec2) -> vec2 = {
+proc vec2_add(a : vec2, b : vec2) -> vec2 = {
    a.x += b.x
    a.y += b.y
    a
@@ -43,6 +40,35 @@ proc main() = {
    var v1 = new vec2
    defer delete v1
 
-   let v2 = v0 + *v1
+   let v2 = vec2_add(v0, *v1)
+
+
+   if true || false
+      puts("that's right!")
+   else if !false {
+      puts("faku!")
+   }
+   else puts("more wat")
+
+   unless true && false {
+      puts("right again!")
+   }
+   
+
+   while false
+      puts("this will never happen!")
+   else {
+      puts("didn't step into while!")
+   }
+
+   unless true {
+      puts("this will never happen!")
+   }
+   else puts("didn't step into unless!")
+
+/*
+   for let i = 0 ; i < 10 ; i += 1 {
+   }
+*/
 }
- 
+

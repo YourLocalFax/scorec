@@ -421,13 +421,60 @@ namespace ScoreC.Compile.SyntaxTree
                         else result = new NodeNew(start, type);
                         break;
                     }
+                    // NOTE(kai): This is probably going to get ugly soon, but for right now it's all near identical. Deal with it plz <3
+                case TokenKind.If:
+                case TokenKind.Unless:
+                case TokenKind.While:
+                case TokenKind.Until:
+                    {
+                        var conditionToken = Current;
+
+                        var isLoop = Current.Kind == TokenKind.While || Current.Kind == TokenKind.Until;
+                        var invertCondition = Current.Kind == TokenKind.Unless || Current.Kind == TokenKind.Until;
+
+                        Advance(); // `if` || `unless`
+
+                        var condition = ParseExpression(out handleFailureMessage);
+                        if (condition == null)
+                        {
+                            handleFailureMessage = false;
+                            Log.AddError(conditionToken.Span, "Expected an expression to be the condition of `{0}`.", conditionToken.Image);
+                        }
+
+                        var pass = ParseExpression(out handleFailureMessage);
+                        if (pass == null)
+                        {
+                            handleFailureMessage = false;
+                            Log.AddError(conditionToken.Span, "Expected an expression to be the pass block of `{0}`.", conditionToken.Image);
+                        }
+
+                        NodeExpression fail = null;
+                        if (Check(TokenKind.Else))
+                        {
+                            var elseToken = Current;
+                            Advance(); // `else`
+                            fail = ParseExpression(out handleFailureMessage);
+                            if (fail == null)
+                            {
+                                handleFailureMessage = false;
+                                Log.AddError(elseToken.Span, "Expected an expression to be the fail block of `{0}`.", conditionToken.Image);
+                            }
+                        }
+
+                        // TODO(kai): SHOULD RETURN NULL, but it's not HUGELY important.
+
+                        if (isLoop)
+                            result = new NodeWhileUntil(conditionToken.Span, invertCondition, condition, pass, fail);
+                        else result = new NodeIfUnless(conditionToken.Span, invertCondition, condition, pass, fail);
+                        break;
+                    }
                 default:
                     {
                         handleFailureMessage = false;
                         Log.AddError(Current.Span,
                                      "Failed to parse an expression at token `{0}`.",
                                      Current.Image);
-                        //Advance();
+                        Advance();
                         result = null;
                         break;
                     }

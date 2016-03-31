@@ -28,5 +28,8 @@
         void Visit(NodeNew node);
         void Visit(NodeDelete node);
         void Visit(NodeDefer node);
+
+        void Visit(NodeIfUnless node);
+        void Visit(NodeWhileUntil node);
     }
 }
