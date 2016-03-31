@@ -100,8 +100,8 @@ namespace ScoreC.Compile.Source
                     Advance();
                     return Token.NewDelimiter(start, Previous);
             // TODO(kai): Not sure if we want two different delimiters for strings, might be able to use ` for something else..
-            case '`':  return GetStringLiteral(start, '`', true, out handleFailureMessage);
-            case '"':  return GetStringLiteral(start, '"', false, out handleFailureMessage);
+            case '`': return GetStringLiteral(start, '`', true, out handleFailureMessage);
+            case '"': return GetStringLiteral(start, '"', false, out handleFailureMessage);
             case '#': return GetDirective(start, out handleFailureMessage);
             case '.':
                 Advance();
@@ -443,82 +443,6 @@ namespace ScoreC.Compile.Source
 
             return Token.NewDirective(GetSpan(start), directive);
         }
-
-        /*
-        // URGENT(kai): refactor this plz, pretty ugly
-        private Token GetOperator()
-        {
-#if DEBUG
-            Debug.Assert(!IsEndOfSource, "Not enough characters exist to start an operator!");
-            Debug.Assert(Operator.IsOperatorStart(Current), "Current character '" + Current + "' is not an operator start.");
-#endif
-            var start = GetSpan();
-
-            ClearBuffer();
-
-            #region OLD
-            var operators = Operator.Images.ToArray();
-            int charCount = 0;
-            while (!IsEndOfSource)
-            {
-                string opImage;
-
-                // Comment is starting here, so just stop plz
-                if (Matches("/#") || Matches("/*"))
-                {
-                    opImage = GetStringFromBuffer();
-                    goto ret_token;
-                }
-                var nextOps = operators.Where(op => op.Length > charCount && op[charCount] == Current).ToArray();
-                // We have a match!
-                if (nextOps.Length == 1 && nextOps[0].Length == charCount + 1)
-                {
-                    Advance();
-                    opImage = nextOps[0];
-                    goto ret_token;
-                }
-                // This character ends whatever operator we had going, so return that.
-                else if (nextOps.Length == 0)
-                {
-                    opImage = GetStringFromBuffer();
-                    foreach (var op in operators)
-                        if (op == opImage)
-                            goto ret_token;
-                    // bad token, onu
-                    var span = GetSpan(start);
-                    var message = Message.InvalidOperatorToken(span, Map.GetSourceAtSpan(span));
-                    Log.AddError(message);
-                    return null;
-                }
-
-                operators = nextOps;
-
-                Bump();
-                charCount++;
-                goto cont;
-
-                ret_token:
-
-                return Token.NewOperator(GetSpan(start), opImage);
-
-                cont: ;
-            }
-
-            // bad token, onu
-            {
-                var span = GetSpan(start);
-                var message = Message.InvalidOperatorToken(span, GetStringFromBuffer());
-                Log.AddError(message);
-                return null;
-            }
-            #endregion
-
-            switch (Current)
-            {
-            default: Debug.Assert(false); return null;
-            }
-        }
-*/
 
         /// <summary>
         /// Will get a numeric literal, be it int or float, in all formats.. yay.
