@@ -116,6 +116,8 @@
     <Compile Include="Compile\SyntaxTree\Ast\NodeInvocation.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeFieldIndex.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeIdentifier.cs" />
+    <Compile Include="Compile\SyntaxTree\Ast\NodeDelete.cs" />
+    <Compile Include="Compile\SyntaxTree\Ast\NodeNew.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeStringLiteral.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeCharLiteral.cs" />
     <Compile Include="Compile\SyntaxTree\Ast\NodeRealLiteral.cs" />

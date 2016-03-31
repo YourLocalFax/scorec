@@ -34,7 +34,7 @@ proc main() = {
 
    var v0 : vec2
 
-   /# var v1 = new vec2
-   /# defer delete v1
+   var v1 = new vec2
+   /* defer */ delete v1 /# */
 }
  

@@ -40,6 +40,8 @@
         Is,
         As,
         Auto,
+        New,
+        Delete,
         // declaration
         Proc,
         Type,

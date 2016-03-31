@@ -23,5 +23,7 @@
         void Visit(NodeAutoCast node);
         void Visit(NodeInfix node);
         void Visit(NodeBlock node);
+        void Visit(NodeNew node);
+        void Visit(NodeDelete node);
     }
 }

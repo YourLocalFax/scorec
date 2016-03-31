@@ -104,6 +104,27 @@ namespace ScoreC.Compile.SyntaxTree
             case TokenKind.Struct:
                 return ParseStructDeclaration(out handleFailureMessage);
 
+            case TokenKind.Delete:
+                {
+                    var start = Current.Span;
+                    Advance(); // `delete`
+
+                    var target = ParsePrimaryExpression(out handleFailureMessage);
+                    if (target == null)
+                    {
+                        if (handleFailureMessage)
+                        {
+                            handleFailureMessage = false;
+                            Log.AddError(start, "Expected an expression for the delete target.");
+                        }
+                        return null;
+                    }
+
+                    // TODO(kai): Check that the given expressions are valid delete targets
+
+                    return new NodeDelete(start, target);
+                }
+
             default:
                 var expr = ParseExpression(out handleFailureMessage);
 
@@ -252,32 +273,36 @@ namespace ScoreC.Compile.SyntaxTree
                     Log.AddError(EoSOrCurrentSpan(),
                                  "Expected a string literal to follow the #char directive, found {0}.",
                                  EoSOrCurrentToken());
-                    return null;
+                    result = null;
                 }
-
-                var tkLiteralString = Current;
-                Advance(); // string literal
-
-                var literalBytes = Encoding.Unicode.GetBytes(tkLiteralString.StringLiteral);
-                var utf32 = Encoding.Convert(Encoding.Unicode, Encoding.UTF32, literalBytes);
-                var charCount = Encoding.UTF32.GetCharCount(utf32);
-
-                if (charCount > 1)
+                else
                 {
-                    handleFailureMessage = false;
-                    Log.AddError(tkLiteralString.Span,
-                                 "The given string literal does not contain a lone Unicode code point. Cannot convert to a character literal.");
-                    return null;
+                    var tkLiteralString = Current;
+                    Advance(); // string literal
+
+                    var literalBytes = Encoding.Unicode.GetBytes(tkLiteralString.StringLiteral);
+                    var utf32 = Encoding.Convert(Encoding.Unicode, Encoding.UTF32, literalBytes);
+                    var charCount = Encoding.UTF32.GetCharCount(utf32);
+
+                    if (charCount > 1)
+                    {
+                        handleFailureMessage = false;
+                        Log.AddError(tkLiteralString.Span,
+                                     "The given string literal does not contain a lone Unicode code point. Cannot convert to a character literal.");
+                        result = null;
+                    }
+                    else
+                    {
+                        var c = Encoding.UTF32.GetChars(utf32);
+
+                        uint literal;
+                        if (c.Length == 2)
+                            literal = (uint)char.ConvertToUtf32(c[1], c[0]);
+                        else literal = (uint)c[0];
+
+                        result = new NodeCharLiteral(start, literal);
+                    }
                 }
-
-                var c = Encoding.UTF32.GetChars(utf32);
-
-                uint literal;
-                if (c.Length == 2)
-                    literal = (uint)char.ConvertToUtf32(c[1], c[0]);
-                else literal = (uint)c[0];
-                
-                result = new NodeCharLiteral(start, literal);
             }
             else
             {
@@ -304,33 +329,57 @@ namespace ScoreC.Compile.SyntaxTree
                     result = new NodeIdentifier(tkIdentifier);
                     break;
                 case TokenKind.OpenCurlyBracket:
-                    var start = Current.Span;
-                    Advance(); // `{`
-
-                    // var success = true;
-                    var body = new List<Node>();
-                    while (!IsEndOfSource && !Check(TokenKind.CloseCurlyBracket))
                     {
-                        var node = GetNode(out handleFailureMessage);
-                        if (node != null)
-                            body.Add(node);
-                        else Advance();
-                        // else success = false;
-                    }
+                        var start = Current.Span;
+                        Advance(); // `{`
 
-                    if (!Check(TokenKind.CloseCurlyBracket))
+                        // var success = true;
+                        var body = new List<Node>();
+                        while (!IsEndOfSource && !Check(TokenKind.CloseCurlyBracket))
+                        {
+                            var node = GetNode(out handleFailureMessage);
+                            if (node != null)
+                                body.Add(node);
+                            else Advance();
+                            // else success = false;
+                        }
+
+                        if (!Check(TokenKind.CloseCurlyBracket))
+                        {
+                            handleFailureMessage = false;
+                            Log.AddError(EoSOrCurrentSpan(),
+                                         "Expected `}` to close this block, found {0}.",
+                                         EoSOrCurrentToken());
+                            result = null;
+                            break;
+                        }
+
+                        Advance(); // `}`
+
+                        result = new NodeBlock(start, body);
+                        break;
+                    }
+                case TokenKind.New:
                     {
-                        handleFailureMessage = false;
-                        Log.AddError(EoSOrCurrentSpan(),
-                                     "Expected `}` to close this block, found {0}.",
-                                     EoSOrCurrentToken());
-                        return null;
+                        var start = Current.Span;
+                        Advance(); // `new`
+
+                        // TODO(kai): Change the name of `new` plz
+                        var type = ParseTypeInfo(out handleFailureMessage);
+                        if (type == null)
+                        {
+                            if (handleFailureMessage)
+                            {
+                                handleFailureMessage = false;
+                                Log.AddError(EoSOrCurrentSpan(),
+                                             "Expected a type for `new` statement, found {0}",
+                                             EoSOrCurrentToken());
+                            }
+                            result = null;
+                        }
+                        else result = new NodeNew(start, type);
+                        break;
                     }
-
-                    Advance(); // `}`
-
-                    result = new NodeBlock(start, body);
-                    break;
                 default:
                     {
                         handleFailureMessage = false;
@@ -338,7 +387,8 @@ namespace ScoreC.Compile.SyntaxTree
                                      "Failed to parse an expression at token `{0}`.",
                                      Current.Image);
                         //Advance();
-                        return null;
+                        result = null;
+                        break;
                     }
                 }
             }
