@@ -102,6 +102,7 @@ namespace ScoreC.Compile.SyntaxTree
                 return ParseBindingDeclaration(out handleFailureMessage);
 
             case TokenKind.Struct:
+                return ParseStructDeclaration(out handleFailureMessage);
 
             default:
                 var expr = ParseExpression(out handleFailureMessage);
@@ -627,10 +628,10 @@ namespace ScoreC.Compile.SyntaxTree
                         }
 
                         // FIXME(kai): check that the type either always or never defines names.
-                        var parameters = new List<ProcedureTypeInfo.Parameter>();
+                        var parameters = new List<Binding>();
                         var count = types.Count;
                         for (int i = 0; i < count; i++)
-                            parameters.Add(new ProcedureTypeInfo.Parameter(names[i]?.Identifier ?? null, types[i]));
+                            parameters.Add(new Binding(names[i], types[i]));
 
                         if (Check(TokenKind.GoesTo))
                         {
@@ -651,15 +652,15 @@ namespace ScoreC.Compile.SyntaxTree
 
                             // TODO(kai): support multiple return values
 
-                            var returns = new List<ProcedureTypeInfo.Parameter>();
-                            returns.Add(new ProcedureTypeInfo.Parameter(null, returnType));
+                            var returns = new List<Binding>();
+                            returns.Add(new Binding(null, returnType));
 
                             return new ProcedureTypeInfo(tkOpenBracket, tkCloseBracket, tkArrow, parameters, returns);
                         }
                         else
                         {
-                            var returns = new List<ProcedureTypeInfo.Parameter>();
-                            returns.Add(new ProcedureTypeInfo.Parameter(null, BuiltinTypeInfo.Get(BuiltinType.Void)));
+                            var returns = new List<Binding>();
+                            returns.Add(new Binding(null, BuiltinTypeInfo.Get(BuiltinType.Void)));
 
                             return new ProcedureTypeInfo(tkOpenBracket, tkCloseBracket, null, parameters, returns);
                         }
@@ -750,7 +751,7 @@ namespace ScoreC.Compile.SyntaxTree
                 }
             }
 
-            return new NodeBindingDeclaration(start, bindingKind, tkIdentifier, typeInfo, value);
+            return new NodeBindingDeclaration(start, bindingKind, new Binding(tkIdentifier, typeInfo), value);
         }
 
         /// <summary>
@@ -904,6 +905,12 @@ namespace ScoreC.Compile.SyntaxTree
             }
 
             // return null;
+        }
+
+        private NodeStructDeclaration ParseStructDeclaration(out bool handleFailureMessage)
+        {
+            handleFailureMessage = true;
+            return null;
         }
         #endregion
     }

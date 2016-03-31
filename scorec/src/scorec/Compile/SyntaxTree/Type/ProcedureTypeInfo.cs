@@ -7,29 +7,15 @@ namespace ScoreC.Compile.SyntaxTree
 
     sealed class ProcedureTypeInfo : TypeInfo
     {
-        public sealed class Parameter
-        {
-            public string Name;
-            public TypeInfo Type;
-
-            public Parameter(string name, TypeInfo type)
-            {
-                Name = name;
-                Type = type;
-            }
-
-            public override string ToString() =>
-                Name == null ? Type.ToString() : string.Format("{0}: {1}", Name, Type.ToString());
-        }
 
         public Token DelimOpenBracket;
         public Token DelimCloseBracket;
         public Token DelimArrow;
 
-        public List<Parameter> Parameters;
-        public List<Parameter> Returns;
+        public List<Binding> Parameters;
+        public List<Binding> Returns;
 
-        public ProcedureTypeInfo(Token delimOpenBracket, Token delimCloseBracket, Token delimArrow, List<Parameter> parameters, List<Parameter> returns)
+        public ProcedureTypeInfo(Token delimOpenBracket, Token delimCloseBracket, Token delimArrow, List<Binding> parameters, List<Binding> returns)
         {
             DelimOpenBracket = delimOpenBracket;
             DelimCloseBracket = delimCloseBracket;

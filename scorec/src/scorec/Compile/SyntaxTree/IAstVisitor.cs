@@ -3,6 +3,7 @@
     interface IAstVisitor
     {
         void Visit(NodeProcedureDeclaration node);
+        void Visit(NodeStructDeclaration node);
         void Visit(NodeBindingDeclaration node);
         void Visit(NodeAssignment node);
 

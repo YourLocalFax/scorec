@@ -9,20 +9,14 @@
 
         public TokenKind BindingKind;
 
-        public Token TkIdentifier;
-        public string BindingName => TkIdentifier.Identifier;
-
-        public TypeInfo DeclaredType;
-        public bool ShouldBeTypeInferred => DeclaredType == null;
-
+        public Binding Binding;
         public NodeExpression Value;
 
-        public NodeBindingDeclaration(Span start, TokenKind bindingKind, Token tkIdentifier, TypeInfo declaredType, NodeExpression value)
+        public NodeBindingDeclaration(Span start, TokenKind bindingKind, Binding binding, NodeExpression value)
         {
             this.start = start;
             BindingKind = bindingKind;
-            TkIdentifier = tkIdentifier;
-            DeclaredType = declaredType;
+            Binding = binding;
             Value = value;
         }
 
