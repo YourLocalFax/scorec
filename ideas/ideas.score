@@ -146,4 +146,16 @@ Should be able to support things like reference counts and GC to some degree, ma
 Both string (can only call procedures with compatible captures) and weak (can call
  any procedure regardless of capture).
 
+
+proc 
+
+proc modify(a: int) -> int [] {
+   a *= 2
+   a += 3
+   a
+}
+
+proc add(a: int, b: int) -> int = [] a + b
+
+
 \********** Captures **********/

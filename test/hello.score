@@ -4,6 +4,11 @@ extern proc puts(*s8) -> s32
 /# int putchar(int)
 extern proc putchar(s32) -> s32
 
+struct vec2 {
+   x : r32
+   y : r32
+}
+
 proc main() = {
    /# Say hello!
    let greeting : *s8 = "Initial Value"
@@ -13,6 +18,7 @@ proc main() = {
 
    puts(greeting)
    putchar(#char "\n")
+
 
    /# Show a number (will get better)
    let a : int  = 2
@@ -24,5 +30,11 @@ proc main() = {
    puts("a + b == ")
    putchar(#char "0" + c as int)
    putchar(#char "\n")
+
+
+   var v0 : vec2
+
+   var v1 = new vec2
+   /# defer delete v1
 }
  
