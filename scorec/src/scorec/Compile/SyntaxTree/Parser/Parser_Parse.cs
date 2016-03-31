@@ -548,12 +548,28 @@ namespace ScoreC.Compile.SyntaxTree
             {
                 switch (Current.Kind)
                 {
-                /*
                 case TokenKind.Identifier:
                     {
-                        return null;
+                        var path = new List<Token>();
+                        while (!IsEndOfSource)
+                        {
+                            var name = Current;
+                            if (!Expect(TokenKind.Identifier))
+                            {
+                                name = null;
+                                handleFailureMessage = false;
+                                Log.AddError(EoSOrCurrentSpan(),
+                                             "Expected an identifier to continue the qualified type name, found {0}.",
+                                             EoSOrCurrentToken());
+                                return null;
+                            }
+                            path.Add(name);
+                            if (!Check(TokenKind.Dot))
+                                break;
+                            Advance(); // `.`
+                        }
+                        return new QualifiedTypeInfo(path);
                     }
-                */
                 #region case Tuple or Procedure Type:
                 case TokenKind.OpenBracket:
                     {
@@ -631,7 +647,8 @@ namespace ScoreC.Compile.SyntaxTree
                         var parameters = new List<Binding>();
                         var count = types.Count;
                         for (int i = 0; i < count; i++)
-                            parameters.Add(new Binding(names[i], types[i]));
+                            // TODO(kai): When we introduce default parameters, change 'null' to an actually parsed value.
+                            parameters.Add(new Binding(names[i], types[i], null));
 
                         if (Check(TokenKind.GoesTo))
                         {
@@ -653,14 +670,14 @@ namespace ScoreC.Compile.SyntaxTree
                             // TODO(kai): support multiple return values
 
                             var returns = new List<Binding>();
-                            returns.Add(new Binding(null, returnType));
+                            returns.Add(new Binding(null, returnType, null));
 
                             return new ProcedureTypeInfo(tkOpenBracket, tkCloseBracket, tkArrow, parameters, returns);
                         }
                         else
                         {
                             var returns = new List<Binding>();
-                            returns.Add(new Binding(null, BuiltinTypeInfo.Get(BuiltinType.Void)));
+                            returns.Add(new Binding(null, BuiltinTypeInfo.Get(BuiltinType.Void), null));
 
                             return new ProcedureTypeInfo(tkOpenBracket, tkCloseBracket, null, parameters, returns);
                         }
@@ -751,7 +768,7 @@ namespace ScoreC.Compile.SyntaxTree
                 }
             }
 
-            return new NodeBindingDeclaration(start, bindingKind, new Binding(tkIdentifier, typeInfo), value);
+            return new NodeBindingDeclaration(start, bindingKind, new Binding(tkIdentifier, typeInfo, value));
         }
 
         /// <summary>
@@ -910,7 +927,89 @@ namespace ScoreC.Compile.SyntaxTree
         private NodeStructDeclaration ParseStructDeclaration(out bool handleFailureMessage)
         {
             handleFailureMessage = true;
-            return null;
+#if DEBUG
+            Debug.Assert(Check(TokenKind.Struct));
+#endif
+            var start = Current.Span;
+            Advance(); // `struct`
+
+            var name = Current;
+            if (!Expect(TokenKind.Identifier))
+            {
+                name = null; // just in case
+                handleFailureMessage = false;
+                if (Check(TokenKind.OpenCurlyBracket))
+                    Log.AddError(Previous.Span, "Missing an identifier for the name of this struct.");
+                    // We continue because we think we found a struct declaration anyway, just without the name.
+                else
+                {
+                    Log.AddError(Previous.Span,
+                                 "Expected an identifier for the name of this struct, found {0}.",
+                                 EoSOrCurrentToken());
+                    return null;
+                }
+            }
+
+            if (!Expect(TokenKind.OpenCurlyBracket))
+            {
+                handleFailureMessage = false;
+                Log.AddError(EoSOrCurrentSpan(),
+                             "Expected `{` to start struct field body, found {0}.",
+                             EoSOrCurrentToken());
+                if (!(Check(TokenKind.Identifier) && CheckNext(TokenKind.Colon)))
+                    return null;
+            }
+
+            var fields = new List<Binding>();
+
+            while (!IsEndOfSource && !Check(TokenKind.CloseCurlyBracket))
+            {
+                var tkName = Current;
+                if (!Expect(TokenKind.Identifier))
+                {
+                    tkName = null;
+                    handleFailureMessage = false;
+                    Log.AddError(Current.Span, "Expected identifier for struct field name, found `{0}`.", Current.Image);
+                    if (CheckNext(TokenKind.Colon))
+                        Advance();
+                    else continue;
+                }
+
+                if (!Expect(TokenKind.Colon))
+                {
+                    // Only error if we haven't already.
+                    if (tkName != null)
+                    {
+                        handleFailureMessage = false;
+                        Log.AddError(EoSOrCurrentSpan(),
+                                     "Expected `:` to follow struct field name, found {0}.",
+                                     EoSOrCurrentToken());
+                        // continue on, maybe we can parse a type
+                    }
+                }
+
+                var type = ParseTypeInfo(out handleFailureMessage);
+                if (type == null && !handleFailureMessage)
+                {
+                    handleFailureMessage = false;
+                    Log.AddError(EoSOrCurrentSpan(),
+                                 "Failed to parse type for struct field at {0}.", EoSOrCurrentToken());
+                }
+
+                // TODO(kai): binding initializers plz
+                fields.Add(new Binding(tkName, type, null));
+            }
+
+            if (!Expect(TokenKind.CloseCurlyBracket))
+            {
+                handleFailureMessage = false;
+                Log.AddError(EoSOrCurrentSpan(),
+                             "Expected `}` to end struct declaration, found {0}.",
+                             EoSOrCurrentToken());
+                return null;
+            }
+
+            return new NodeStructDeclaration(start, name, fields);
         }
         #endregion
     }

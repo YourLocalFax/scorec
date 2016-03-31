@@ -10,10 +10,13 @@
         public TypeInfo DeclaredType;
         public bool ShouldBeTypeInferred => DeclaredType == null;
 
-        public Binding(Token tkName, TypeInfo declaredType)
+        public NodeExpression Value;
+
+        public Binding(Token tkName, TypeInfo declaredType, NodeExpression value)
         {
             TkName = tkName;
             DeclaredType = declaredType;
+            Value = value;
         }
 
         public override string ToString() =>

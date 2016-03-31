@@ -130,6 +130,7 @@
     <Compile Include="Compile\SyntaxTree\Type\BuiltinTypeInfo.cs" />
     <Compile Include="Compile\SyntaxTree\Type\PointerTypeInfo.cs" />
     <Compile Include="Compile\SyntaxTree\Type\ProcedureTypeInfo.cs" />
+    <Compile Include="Compile\SyntaxTree\Type\QualifiedTypeInfo.cs" />
     <Compile Include="Compile\SyntaxTree\Type\TypeInfo.cs" />
     <Compile Include="DLLExportAttribute.cs" />
     <Compile Include="Program.cs" />

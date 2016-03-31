@@ -11,7 +11,7 @@ namespace ScoreC.Compile.SyntaxTree
 
         public NodeStructDeclaration(Span start, Token tkName, List<Binding> fields)
         {
-
+            this.start = start;
         }
 
         public override void Accept(IAstVisitor visitor) => visitor.Visit(this);

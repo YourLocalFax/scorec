@@ -1,4 +1,6 @@
-﻿namespace ScoreC.Compile.SyntaxTree
+﻿using System.Diagnostics;
+
+namespace ScoreC.Compile.SyntaxTree
 {
     using Source;
 
@@ -10,14 +12,16 @@
         public TokenKind BindingKind;
 
         public Binding Binding;
-        public NodeExpression Value;
+        public NodeExpression Value => Binding.Value;
 
-        public NodeBindingDeclaration(Span start, TokenKind bindingKind, Binding binding, NodeExpression value)
+        public NodeBindingDeclaration(Span start, TokenKind bindingKind, Binding binding)
         {
+#if DEBUG
+            Debug.Assert(bindingKind == TokenKind.Var || bindingKind == TokenKind.Let);
+#endif
             this.start = start;
             BindingKind = bindingKind;
             Binding = binding;
-            Value = value;
         }
 
         public override void Accept(IAstVisitor visitor) => visitor.Visit(this);

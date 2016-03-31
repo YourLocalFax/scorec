@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace ScoreC.Compile.SyntaxTree
+﻿namespace ScoreC.Compile.SyntaxTree
 {
     abstract class TypeInfo
     {
+        // TODO(kai): This will probably contain entry points for type comparisons and conversions, as well as aiding in getting LLVM types.
     }
 }
