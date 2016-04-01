@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace ScoreC.Compile.Analysis
 {
-    using System.Diagnostics;
     using SyntaxTree;
 
     class Symbol
