@@ -6,6 +6,7 @@ using LLVMSharp;
 
 namespace ScoreC
 {
+    using Compile;
     using Compile.Logging;
     using Compile.Source;
     using Compile.SyntaxTree;
@@ -72,49 +73,8 @@ namespace ScoreC
 
             var fileName = args[0];
 
-            SourceMap map;
-            try
-            {
-                map = SourceMap.FromFile(fileName);
-            }
-            catch (IOException e)
-            {
-                Console.WriteLine(e.Message);
-                Exit();
-                return;
-            }
-
-            var log = new Log();
-            Lexer.Lex(log, map);
-
-            if (log.HasErrors)
-            {
-                log.PrintErrors();
-                Exit();
-                return;
-            }
-
-            Parser.Parse(log, map);
-
-            if (log.HasErrors)
-            {
-                log.PrintErrors();
-                Exit();
-                return;
-            }
-
-            //*
-            foreach (var token in map.Tokens)
-            {
-                var tokenToString = token.ToString();
-                Console.WriteLine(token.Span.ToString().PadRight(15) + ": " + tokenToString);
-
-                var tokenInSource = map.GetSourceAtSpan(token.Span);
-                if (tokenToString != tokenInSource)
-                    Console.WriteLine(": ".PadLeft(17) + tokenInSource);
-            }
-            Console.WriteLine();
-            //*/
+            Project.Create(fileName);
+            //Project.Compile();
 
             Exit();
         }

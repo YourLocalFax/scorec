@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
 
 namespace ScoreC.Compile.Source
@@ -8,22 +7,16 @@ namespace ScoreC.Compile.Source
 
     sealed partial class Lexer
     {
-        // NOTE(kai): This exists because I might want to multi-thread the compiler.
-        // If that's the case, it would be pretty easy to change this to a dictionary
-        //  or something and use different lexers for different threads.
-        private static Lexer lexer = null;
-
         /// <summary>
         /// </summary>
         /// <param name="map"></param>
         /// <returns></returns>
-        public static void Lex(Log log, SourceMap map)
+        public static void Lex(SourceMap map)
         {
             if (map.Tokens != null)
                 return;
-            if (lexer == null)
-                lexer = new Lexer();
-            map.Tokens = lexer.GetTokens(log, map);
+            var lexer = new Lexer();
+            map.Tokens = lexer.GetTokens(Project.Log, map);
         }
 
         /// <summary>

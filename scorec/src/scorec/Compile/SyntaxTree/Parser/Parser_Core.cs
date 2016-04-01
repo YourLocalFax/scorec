@@ -5,27 +5,33 @@ using System.Text;
 
 namespace ScoreC.Compile.SyntaxTree
 {
+    using System.Threading;
     using Logging;
     using Source;
 
     sealed partial class Parser
     {
-        // NOTE(kai): This exists because I might want to multi-thread the compiler.
-        // If that's the case, it would be pretty easy to change this to a dictionary
-        //  or something and use different parsers for different threads.
-        private static Parser parser = null;
+        private static List<Thread> activeThreads = new List<Thread>();
 
         /// <summary>
         /// </summary>
         /// <param name="map"></param>
         /// <returns></returns>
-        public static void Parse(Log log, SourceMap map)
+        public static void Parse(SourceMap map)
         {
             if (map.Ast != null)
                 return;
-            if (parser == null)
-                parser = new Parser();
-            map.Ast = parser.GetAst(log, map);
+            /*
+            var thread = new Thread(() =>
+            {
+                var parser = new Parser();
+                map.Ast = parser.GetAst(Project.Log, map);
+            });
+            activeThreads.Add(thread);
+            thread.Start();
+            */
+            var parser = new Parser();
+            map.Ast = parser.GetAst(Project.Log, map);
         }
 
         /// <summary>

@@ -1,74 +1,10 @@
 
-#load "path/name.score"
+/# use vec2
 
-struct vec2 {
-   x : r32
-   y : r32
-}
-
-proc vec2_add(a : vec2, b : vec2) -> vec2 = {
-   a.x += b.x
-   a.y += b.y
-   a
-}
+#load "../lib/math/vec2.score"
 
 proc main() = {
-   /# Say hello!
-   let greeting : *s8 = "Initial Value"
-
-   greeting = "Hello, "
-   greeting = strcat(greeting, "senpai!")
-
-   puts(greeting)
-   putchar(#char "\n")
-
-
-   /# Show a number (will get better)
-   let a : int  = 2
-   let b : real = 3
-
-   let c = a + b
-
-   /# I know this is 5, which is one character:
-   puts("a + b == ")
-   putchar(#char "0" + c as int)
-   putchar(#char "\n")
-
-
-   var v0 : vec2
-
-   var v1 = new vec2
-   defer delete v1
-
-   let v2 = vec2_add(v0, *v1)
-
-
-   if true || false
-      puts("that's right!")
-   else if !false {
-      puts("faku!")
-   }
-   else puts("more wat")
-
-   unless true && false {
-      puts("right again!")
-   }
-   
-
-   while false
-      puts("this will never happen!")
-   else {
-      puts("didn't step into while!")
-   }
-
-   unless true {
-      puts("this will never happen!")
-   }
-   else puts("didn't step into unless!")
-
-/*
-   for let i = 0 ; i < 10 ; i += 1 {
-   }
-*/
+   let v0 = init_vec2(1, 2)
+   let v1 = init_vec2(3, 4)
 }
 

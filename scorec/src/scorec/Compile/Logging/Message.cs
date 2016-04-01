@@ -26,7 +26,7 @@ namespace ScoreC.Compile.Logging
         {
             var buffer = new StringBuilder();
 
-            if (format.ShowLocation)
+            if (format.ShowLocation && Location != null)
             {
                 // TODO(kai): Move the file name into Span and add it to the format.
                 buffer.AppendFormat("{0} {1} - ", Location.Map.Name, Location.ToString(new SpanFormat(ommitLocationEnd: format.OmmitLocationEnd)));

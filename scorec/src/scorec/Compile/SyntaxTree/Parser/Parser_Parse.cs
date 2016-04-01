@@ -80,6 +80,30 @@ namespace ScoreC.Compile.SyntaxTree
             Debug.Assert(!IsEndOfSource, "No Tokens!! Called at end of source!");
 #endif
 
+            if (CheckDirective("load"))
+            {
+                var start = Current.Span;
+                Advance(); // `#load`
+
+                if (!Check(TokenKind.String))
+                {
+                    handleFailureMessage = false;
+                    Log.AddError(EoSOrCurrentSpan(),
+                                 "Expected a string literal to follow the #load directive, found {0}.",
+                                 EoSOrCurrentToken());
+                    return null;
+                }
+
+                var loadPath = Current.StringLiteral;
+                Advance(); // string literal
+
+                Project.LoadFile(start.Map.FullPath, loadPath);
+
+                // don't return a token, but don't error either.
+                handleFailureMessage = false;
+                return null;
+            }
+
             switch (Current.Kind)
             {
             case TokenKind.Extern:

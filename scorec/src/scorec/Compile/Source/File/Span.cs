@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ScoreC.Compile.Source
 {
-    struct Span
+    class Span
     {
         /// <summary>
         /// The source file this Span describes.

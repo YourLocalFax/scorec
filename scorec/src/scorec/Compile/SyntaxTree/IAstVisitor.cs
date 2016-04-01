@@ -2,6 +2,8 @@
 {
     interface IAstVisitor
     {
+        void Visit(NodeLoad node);
+
         void Visit(NodeProcedureDeclaration node);
         void Visit(NodeStructDeclaration node);
         void Visit(NodeBindingDeclaration node);

@@ -9,56 +9,6 @@ namespace ScoreC.Compile.Source
 
     sealed class SourceMap
     {
-        // from http://stackoverflow.com/questions/703281/getting-path-relative-to-the-current-working-directory/703290#703290
-        private static string MakeRelativePath(string workingDirectory, string fullPath)
-        {
-            string result = string.Empty;
-            int offset;
-
-            // this is the easy case.  The file is inside of the working directory.
-            if (fullPath.StartsWith(workingDirectory))
-            {
-                return fullPath.Substring(workingDirectory.Length + 1);
-            }
-
-            // the hard case has to back out of the working directory
-            string[] baseDirs = workingDirectory.Split(new char[] { ':', '\\', '/' });
-            string[] fileDirs = fullPath.Split(new char[] { ':', '\\', '/' });
-
-            // if we failed to split (empty strings?) or the drive letter does not match
-            if (baseDirs.Length <= 0 || fileDirs.Length <= 0 || baseDirs[0] != fileDirs[0])
-            {
-                // can't create a relative path between separate harddrives/partitions.
-                return fullPath;
-            }
-
-            // skip all leading directories that match
-            for (offset = 1; offset < baseDirs.Length; offset++)
-            {
-                if (baseDirs[offset] != fileDirs[offset])
-                    break;
-            }
-
-            // back out of the working directory
-            for (int i = 0; i < (baseDirs.Length - offset); i++)
-            {
-                result += "..\\";
-            }
-
-            // step into the file path
-            for (int i = offset; i < fileDirs.Length - 1; i++)
-            {
-                result += fileDirs[i] + "\\";
-            }
-
-            // append the file
-            result += fileDirs[fileDirs.Length - 1];
-
-            return result;
-        }
-
-        private static int unnamedCount = 0;
-
         /// <summary>
         /// Creates a new SourceFile pointing to the contents of the given file.
         /// 
@@ -71,19 +21,15 @@ namespace ScoreC.Compile.Source
         /// </summary>
         /// <param name="filePath"></param>
         /// <returns></returns>
-        public static SourceMap FromFile(string filePath, string name = null)
+        public static SourceMap FromFile(string filePath)
         {
             // TODO(kai): Validate that the path is something that could exist (a valid path).
-            var absPath = Path.GetFullPath(filePath);
-            var relPath = MakeRelativePath(Environment.CurrentDirectory, absPath);
-            return new SourceMap(relPath, () =>
-            {
-                // FIXME(kai): Do sanity checking, probably
-                var source = File.ReadAllText(filePath);
-                return source.Replace("\r\n", "\n");
-            });
+            var fullPath = Path.GetFullPath(filePath);
+            var source = File.ReadAllText(filePath);
+            return new SourceMap(fullPath, source.Replace("\r\n", "\n"));
         }
 
+        /*
         /// <summary>
         /// Creates a new SourceFile pointing to the contents of the given stream.
         /// 
@@ -101,26 +47,15 @@ namespace ScoreC.Compile.Source
             var source = reader.ReadToEnd().Replace("\r\n", "\n");
             return new SourceMap(name, () => source);
         }
+        */
+
+        public readonly string FullPath;
         
         /// <summary>
         /// The name of this SourceFile.
         /// </summary>
         public string Name { get; private set; }
-        private readonly Func<string> sourceGenerator;
-
-        private string sourceCached = null;
-        /// <summary>
-        /// Requests and returns the source of this SourceFile.
-        /// </summary>
-        public string Source
-        {
-            get
-            {
-                if (sourceCached == null)
-                    sourceCached = sourceGenerator();
-                return sourceCached;
-            }
-        }
+        public string Source { get; private set; }
 
         private string[] sourceLinesCached = null;
         /// <summary>
@@ -144,10 +79,11 @@ namespace ScoreC.Compile.Source
         // UGRGET(kai): doc this
         public Ast Ast = null;
 
-        private SourceMap(string name, Func<string> sourceGenerator)
+        private SourceMap(string fullPath, string source)
         {
-            Name = name;
-            this.sourceGenerator = sourceGenerator;
+            FullPath = fullPath;
+            Name = Util.MakeRelativePath(Environment.CurrentDirectory, fullPath);
+            Source = source;
         }
 
         /// <summary>
