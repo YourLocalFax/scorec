@@ -85,6 +85,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Compile\Analysis\SymbolTable.cs" />
     <Compile Include="Compile\Logging\Log.cs" />
     <Compile Include="Compile\Logging\Message.cs" />
     <Compile Include="Compile\Logging\MessageFormat.cs" />
