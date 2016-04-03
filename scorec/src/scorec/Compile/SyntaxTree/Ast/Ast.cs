@@ -5,6 +5,7 @@ using System.Text;
 
 namespace ScoreC.Compile.SyntaxTree
 {
+    using Analysis;
     using Source;
 
     sealed class Ast
@@ -27,5 +28,10 @@ namespace ScoreC.Compile.SyntaxTree
         }
 
         // TODO(kai): Insert before/after another node (for compile-time code modification).
+
+        public void Accept(IAstVisitor visitor)
+        {
+            nodes.ForEach(node => node.Accept(visitor));
+        }
     }
 }

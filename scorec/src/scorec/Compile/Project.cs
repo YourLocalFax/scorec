@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace ScoreC.Compile
 {
+    using Analysis;
     using Logging;
     using Source;
     using SyntaxTree;
@@ -17,6 +18,9 @@ namespace ScoreC.Compile
         private static bool IsFileLoaded(string fullPath) =>
             loadedFiles.ContainsKey(fullPath);
 
+        private static SymbolTableBuilder symbolTableBuilder = new SymbolTableBuilder();
+        private static SymbolTable symbols => symbolTableBuilder.SymbolTable;
+
         private static bool ParseFile(SourceMap map)
         {
             Log.AddInfo(null, "Parsing {0}", map.FullPath);
@@ -29,6 +33,10 @@ namespace ScoreC.Compile
             if (Log.HasErrors)
                 return false;
 
+            SemanticAnalyzer.Analyze(map, symbolTableBuilder);
+            if (Log.HasErrors)
+                return false;
+
             return true;
         }
 
@@ -36,7 +44,13 @@ namespace ScoreC.Compile
         {
             var fullPath = Path.GetFullPath(filePath);
             LoadFile(fullPath);
+
             Log.Print();
+
+            Console.WriteLine();
+            Console.WriteLine(symbols);
+
+            Console.WriteLine();
         }
 
         private static void LoadFile(string fullPath, Span errorLocation = null)

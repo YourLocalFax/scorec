@@ -51,5 +51,9 @@ namespace ScoreC.Compile.SyntaxTree
         /// The current index into the token list.
         /// </summary>
         private int tokenOffset = 0;
+
+        private Parser()
+        {
+        }
     }
 }

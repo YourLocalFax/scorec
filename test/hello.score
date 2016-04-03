@@ -4,7 +4,51 @@
 #load "../lib/math/vec2.score"
 
 proc main() = {
+
+   /# All globals are definitely stored in the symbol table.
+
+   /# Locals, though, I'm not sure...
+   /# It would be more consistent, of course, to do so.
+   /# BUT the rest of the program doesn't need to know about
+   /#  each local in sub-sub-sub scopes...
+   /# I COULD do what I did with Laye and have these handled
+   /#  differently, especially since I want to be able
+   /#  to rebind to a name with a different type.
+   /# I don't have a specific use case for that yet, but
+   /#  for doing error checking on an object or something
+   /#  it could be nice to get a more detailed version of
+   /#  a value and store it in the same name.
+
    let v0 = init_vec2(1, 2)
    let v1 = init_vec2(3, 4)
+
+   let count = 12345
+
+   /*
+
+   /# array count is upconverted to u64 by default
+   /# array count must also ALWAYS be unsigned,
+   /#  no point in negative counts.
+   let a0 : [count] real         /# 12,345 reals, count is type u64
+   let a1 : [count as u16] real  /# 12,345 reals, count is type u64
+   let a2 : [count : u16] real   /# 12,345 reals, count is type u16
+
+
+   /# `j` is the label as well as the binding for this loop
+   each j : 0 .. 9 {
+      /# `i` is the label as well as the binding for this loop
+      each i : 0 .. 9 {
+
+      }
+   }
+
+   while b : true {
+      until c : false {
+
+      }
+   }
+
+   */
 }
 
+/# TODO: IsResultRequired && InTailPosition

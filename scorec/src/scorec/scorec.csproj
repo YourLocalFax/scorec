@@ -85,7 +85,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Compile\Analysis\SemanticAnalyzer.cs" />
     <Compile Include="Compile\Analysis\SymbolTable.cs" />
+    <Compile Include="Compile\Analysis\SymbolTableBuilder.cs" />
     <Compile Include="Compile\Logging\Log.cs" />
     <Compile Include="Compile\Logging\Message.cs" />
     <Compile Include="Compile\Logging\MessageFormat.cs" />
@@ -141,6 +143,7 @@
     <Compile Include="Compile\SyntaxTree\Type\PointerTypeInfo.cs" />
     <Compile Include="Compile\SyntaxTree\Type\ProcedureTypeInfo.cs" />
     <Compile Include="Compile\SyntaxTree\Type\QualifiedTypeInfo.cs" />
+    <Compile Include="Compile\SyntaxTree\Type\StructTypeInfo.cs" />
     <Compile Include="Compile\SyntaxTree\Type\TypeInfo.cs" />
     <Compile Include="DLLExportAttribute.cs" />
     <Compile Include="Program.cs" />

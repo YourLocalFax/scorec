@@ -14,6 +14,8 @@
         {
             Target = target;
             CastTo = castTo;
+
+            TypeInfo = CastTo;
         }
 
         public override void Accept(IAstVisitor visitor) => visitor.Visit(this);
