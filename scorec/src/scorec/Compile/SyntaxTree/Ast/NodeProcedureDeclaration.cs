@@ -33,6 +33,8 @@
         /// </summary>
         public ProcedureBody Body;
 
+        public bool Returns => (TypeInfo.Returns?.Count ?? 0) > 0;
+
         public NodeProcedureDeclaration(Token kwProc, Token tkName, ProcedureTypeInfo typeInfo, ProcedureBody body)
         {
             KwProc = kwProc;

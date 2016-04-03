@@ -12,15 +12,6 @@
         public bool IsResultRequired = false;
 
         /// <summary>
-        /// Used to determine if this is the last piece of code in
-        ///  a list of other nodes.
-        /// If this is true, the compiler knows this is the last part
-        ///  of a set if nodes, which makes knowing where the exit points
-        ///  of a procedure are, as well as expression blocks, easy.
-        /// </summary>
-        public bool InTailPosition = false;
-
-        /// <summary>
         /// Used to determine if this expression is an LValue.
         /// An LValue can be the left-hand side of an expression.
         /// </summary>

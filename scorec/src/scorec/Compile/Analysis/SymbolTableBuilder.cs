@@ -17,7 +17,7 @@ namespace ScoreC.Compile.Analysis
         }
 
         public void AddSymbol(string name, TypeInfo typeInfo, SymbolKind kind = SymbolKind.None) =>
-            scopes.Peek().AddSymbol(name, typeInfo, kind | (scopes.Count == 1 ? SymbolKind.Global : SymbolKind.Local));
+            scopes.Peek().AddSymbol(name, typeInfo, kind | (scopes.Count == 1 ? SymbolKind.None : SymbolKind.Local));
 
         public void PushScope(string optName, SymbolKind kind = SymbolKind.None)
         {

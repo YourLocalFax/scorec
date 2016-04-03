@@ -7,7 +7,6 @@ namespace ScoreC.Compile.SyntaxTree
 
     sealed class ProcedureTypeInfo : TypeInfo
     {
-
         public Token DelimOpenBracket;
         public Token DelimCloseBracket;
         public Token DelimArrow;
@@ -39,13 +38,14 @@ namespace ScoreC.Compile.SyntaxTree
 
             if (DelimArrow != null)
             {
-                buffer.Append(" -> ");
+                buffer.Append(" -> (");
                 for (int i = 0; i < Returns.Count; i++)
                 {
                     if (i > 0)
                         buffer.Append(", ");
                     buffer.Append(Returns[i]);
                 }
+                buffer.Append(")");
             }
 
             return buffer.ToString();

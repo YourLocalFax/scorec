@@ -13,6 +13,8 @@
         {
             Target = target;
             Value = value;
+
+            Value.IsResultRequired = true;
         }
 
         public override void Accept(IAstVisitor visitor) => visitor.Visit(this);

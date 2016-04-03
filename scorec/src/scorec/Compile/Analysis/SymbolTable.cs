@@ -10,10 +10,10 @@ namespace ScoreC.Compile.Analysis
     enum SymbolKind
     {
         None = 0,
-        Global = 1,
-        Local = 2,
-        Scope = 4,
-        Procedure = 8,
+        Local = 1,
+        Scope = 2,
+        Struct = 4,
+        Procedure = 5,
     }
 
     class Symbol
@@ -21,6 +21,12 @@ namespace ScoreC.Compile.Analysis
         public string Name;
         public TypeInfo TypeInfo;
         public SymbolKind Kind;
+
+        public bool IsGlobal => (Kind & SymbolKind.Local) == 0;
+
+        public bool IsStruct => (Kind & SymbolKind.Struct) != 0;
+        public bool IsProcedure => (Kind & SymbolKind.Procedure) != 0;
+        public bool IsScope => (Kind & SymbolKind.Scope) != 0;
 
         public Symbol(string name, TypeInfo typeInfo, SymbolKind kind)
         {
@@ -42,7 +48,7 @@ namespace ScoreC.Compile.Analysis
         /// <summary>
         /// Base for a symbol table
         /// </summary>
-        public SymbolTable(string name = null, SymbolKind kind = SymbolKind.Global)
+        public SymbolTable(string name = null, SymbolKind kind = SymbolKind.None)
             : base(name, null, kind | SymbolKind.Scope)
         {
         }
@@ -83,7 +89,7 @@ namespace ScoreC.Compile.Analysis
             for (int i = 0; i < indentations; i++)
                 buffer.Append("  ");
 
-            buffer.Append("/# ").AppendLine(Kind.ToString());
+            buffer.Append("/# ").AppendLine(Kind.ToString().Replace(",", ""));
 
             for (int i = 0; i < indentations; i++)
                 buffer.Append("  ");
@@ -101,8 +107,10 @@ namespace ScoreC.Compile.Analysis
                     var indents = new StringBuilder();
                     for (int i = 0; i < indentations + 1; i++)
                         indents.Append("  ");
+
                     buffer.Append(indents.ToString());
-                    buffer.Append("/# ").AppendLine(sym.Kind.ToString());
+                    buffer.Append("/# ").AppendLine(sym.Kind.ToString().Replace(",", ""));
+
                     buffer.Append(indents.ToString());
                     buffer.AppendLine(sym.ToString().Replace("\n", "\n" + indents));
                 }

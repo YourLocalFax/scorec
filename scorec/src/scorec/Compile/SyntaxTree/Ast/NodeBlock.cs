@@ -2,6 +2,7 @@
 
 namespace ScoreC.Compile.SyntaxTree
 {
+    using System.Linq;
     using Source;
 
     class NodeBlock : NodeExpression
@@ -11,16 +12,16 @@ namespace ScoreC.Compile.SyntaxTree
 
         public List<Node> Body;
 
-        // FIXME(kai): When we add return statements, include that as an option?
-        /// <summary>
-        /// CanBeExpression
-        /// </summary>
-        public bool CanBeExpression => Body != null && Body.Count > 0 && Body[Body.Count - 1] is NodeExpression;
+        public bool CanBeExpression = true;
 
         public NodeBlock(Span tkOpenCurlyBraceStart, List<Node> body)
         {
             TkOpenCurlyBraceStart = tkOpenCurlyBraceStart;
             Body = body;
+
+            // NOTE(kai): IsResultRequired cannot be properly set for the body because we don't yet know if this block requires a result.
+
+            body.Last().InTailPosition = true;
         }
 
         public override void Accept(IAstVisitor visitor) => visitor.Visit(this);

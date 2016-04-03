@@ -14,6 +14,15 @@ namespace ScoreC.Compile.SyntaxTree
         /// </summary>
         public abstract Span Start { get; }
 
+        /// <summary>
+        /// Used to determine if this is the last piece of code in
+        ///  a list of other nodes.
+        /// If this is true, the compiler knows this is the last part
+        ///  of a set if nodes, which makes knowing where the exit points
+        ///  of a procedure are, as well as expression blocks, easy.
+        /// </summary>
+        public bool InTailPosition = false;
+
         public abstract void Accept(IAstVisitor visitor);
     }
 }

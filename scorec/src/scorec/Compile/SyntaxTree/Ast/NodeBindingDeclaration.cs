@@ -22,6 +22,9 @@ namespace ScoreC.Compile.SyntaxTree
             this.start = start;
             BindingKind = bindingKind;
             Binding = binding;
+
+            if (Binding.Value != null)
+                Binding.Value.IsResultRequired = true;
         }
 
         public override void Accept(IAstVisitor visitor) => visitor.Visit(this);

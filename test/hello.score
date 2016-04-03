@@ -3,7 +3,7 @@
 
 #load "../lib/math/vec2.score"
 
-proc main() = {
+proc main() {
 
    /# All globals are definitely stored in the symbol table.
 
