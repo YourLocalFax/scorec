@@ -20,7 +20,7 @@
 
         public void Visit(NodeProcedureDeclaration node)
         {
-            builder.AddSymbol(node.Name, node.TypeInfo);
+            builder.AddSymbol(node.Name, node.TypeInfo, SymbolKind.Procedure);
             node.Body.Value.Accept(this);
         }
 
@@ -100,7 +100,7 @@
 
         public void Visit(NodeBlock node)
         {
-            builder.PushScope();
+            builder.PushScope(null);
             node.Body.ForEach(n => n.Accept(this));
             builder.PopScope();
         }

@@ -22,6 +22,12 @@ proc main() = {
    let v0 = init_vec2(1, 2)
    let v1 = init_vec2(3, 4)
 
+   proc test_proc () {
+      let a = 1
+      let b = 2
+      let c = 4
+   }
+
    let count = 12345
 
    /*

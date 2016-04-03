@@ -1,19 +1,32 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace ScoreC.Compile.Analysis
 {
     using SyntaxTree;
 
+    [Flags]
+    enum SymbolKind
+    {
+        None = 0,
+        Global = 1,
+        Local = 2,
+        Scope = 4,
+        Procedure = 8,
+    }
+
     class Symbol
     {
         public string Name;
         public TypeInfo TypeInfo;
+        public SymbolKind Kind;
 
-        public Symbol(string name, TypeInfo typeInfo)
+        public Symbol(string name, TypeInfo typeInfo, SymbolKind kind)
         {
             Name = name;
             TypeInfo = typeInfo;
+            Kind = kind;
         }
 
         public override string ToString() =>
@@ -29,8 +42,8 @@ namespace ScoreC.Compile.Analysis
         /// <summary>
         /// Base for a symbol table
         /// </summary>
-        public SymbolTable(string name = null)
-            : base(name, null)
+        public SymbolTable(string name = null, SymbolKind kind = SymbolKind.Global)
+            : base(name, null, kind | SymbolKind.Scope)
         {
         }
 
@@ -50,15 +63,15 @@ namespace ScoreC.Compile.Analysis
         }
         */
 
-        public void AddSymbol(string name, TypeInfo typeInfo)
+        public void AddSymbol(string name, TypeInfo typeInfo, SymbolKind kind)
         {
             // FIXME(kai): Log an error when a symbol conflicts with another.
-            symbols.Add(new Symbol(name, typeInfo));
+            symbols.Add(new Symbol(name, typeInfo, kind));
         }
 
-        public SymbolTable AddScope(string optName = null)
+        public SymbolTable AddScope(string optName, SymbolKind kind)
         {
-            var scope = new SymbolTable(optName);
+            var scope = new SymbolTable(optName, kind);
             symbols.Add(scope);
             return scope;
         }
@@ -66,6 +79,11 @@ namespace ScoreC.Compile.Analysis
         public string ToString(int indentations)
         {
             var buffer = new StringBuilder();
+
+            for (int i = 0; i < indentations; i++)
+                buffer.Append("  ");
+
+            buffer.Append("/# ").AppendLine(Kind.ToString());
 
             for (int i = 0; i < indentations; i++)
                 buffer.Append("  ");
@@ -83,6 +101,8 @@ namespace ScoreC.Compile.Analysis
                     var indents = new StringBuilder();
                     for (int i = 0; i < indentations + 1; i++)
                         indents.Append("  ");
+                    buffer.Append(indents.ToString());
+                    buffer.Append("/# ").AppendLine(sym.Kind.ToString());
                     buffer.Append(indents.ToString());
                     buffer.AppendLine(sym.ToString().Replace("\n", "\n" + indents));
                 }

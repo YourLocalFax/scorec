@@ -16,12 +16,12 @@ namespace ScoreC.Compile.Analysis
             scopes.Push(SymbolTable);
         }
 
-        public void AddSymbol(string name, TypeInfo typeInfo) =>
-            scopes.Peek().AddSymbol(name, typeInfo);
+        public void AddSymbol(string name, TypeInfo typeInfo, SymbolKind kind = SymbolKind.None) =>
+            scopes.Peek().AddSymbol(name, typeInfo, kind | (scopes.Count == 1 ? SymbolKind.Global : SymbolKind.Local));
 
-        public void PushScope(string optName = null)
+        public void PushScope(string optName, SymbolKind kind = SymbolKind.None)
         {
-            var newScope = SymbolTable.AddScope(optName);
+            var newScope = scopes.Peek().AddScope(optName, kind | SymbolKind.Local);
             scopes.Push(newScope);
         }
 
