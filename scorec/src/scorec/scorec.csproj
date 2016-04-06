@@ -86,8 +86,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compile\Analysis\SemanticAnalyzer.cs" />
+    <Compile Include="Compile\Analysis\SymbolicResolver.cs" />
     <Compile Include="Compile\Analysis\SymbolTable.cs" />
     <Compile Include="Compile\Analysis\SymbolTableBuilder.cs" />
+    <Compile Include="Compile\Analysis\SymbolTableWalker.cs" />
     <Compile Include="Compile\Logging\Log.cs" />
     <Compile Include="Compile\Logging\Message.cs" />
     <Compile Include="Compile\Logging\MessageFormat.cs" />

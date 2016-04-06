@@ -39,12 +39,20 @@ namespace ScoreC.Compile.SyntaxTree
         /// <summary>
         /// The order matters, here!
         /// </summary>
+        public List<FieldInfo> Parameters;
+        /// <summary>
+        /// The order matters, here!
+        /// </summary>
         public List<FieldInfo> Fields;
 
         public StructTypeInfo()
         {
+            Parameters = new List<FieldInfo>();
             Fields = new List<FieldInfo>();
         }
+
+        public void AddParameterInfo(string name, TypeInfo typeInfo) =>
+            Parameters.Add(new FieldInfo(name, typeInfo));
 
         public void AddFieldInfo(string name, TypeInfo typeInfo) =>
             Fields.Add(new FieldInfo(name, typeInfo));
@@ -53,7 +61,14 @@ namespace ScoreC.Compile.SyntaxTree
         {
             var buffer = new StringBuilder();
 
-            buffer.AppendLine("struct {");
+            buffer.Append("struct");
+            if (Parameters.Count > 0)
+            {
+                buffer.Append("(");
+                buffer.Append(string.Join(", ", Parameters));
+                buffer.Append(")");
+            }
+            buffer.AppendLine(" {");
 
             foreach (var field in Fields)
                 buffer.AppendLine("   " + field);

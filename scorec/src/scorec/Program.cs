@@ -73,8 +73,8 @@ namespace ScoreC
 
             var fileName = args[0];
 
-            Project.Create(fileName);
-            //Project.Compile();
+            var project = new Project(fileName);
+            var success = project.Process();
 
             Exit();
         }

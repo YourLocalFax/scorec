@@ -4,6 +4,7 @@ using System.Text;
 
 namespace ScoreC.Compile.Analysis
 {
+    using Source;
     using SyntaxTree;
 
     [Flags]
@@ -18,6 +19,7 @@ namespace ScoreC.Compile.Analysis
 
     class Symbol
     {
+        public Span Location;
         public string Name;
         public TypeInfo TypeInfo;
         public SymbolKind Kind;
@@ -28,8 +30,9 @@ namespace ScoreC.Compile.Analysis
         public bool IsProcedure => (Kind & SymbolKind.Procedure) != 0;
         public bool IsScope => (Kind & SymbolKind.Scope) != 0;
 
-        public Symbol(string name, TypeInfo typeInfo, SymbolKind kind)
+        public Symbol(Span location, string name, TypeInfo typeInfo, SymbolKind kind)
         {
+            Location = location;
             Name = name;
             TypeInfo = typeInfo;
             Kind = kind;
@@ -43,13 +46,11 @@ namespace ScoreC.Compile.Analysis
     {
         private List<Symbol> symbols = new List<Symbol>();
 
-        public IEnumerable<Symbol> DEBUG_SymbolList => symbols;
-
         /// <summary>
         /// Base for a symbol table
         /// </summary>
         public SymbolTable(string name = null, SymbolKind kind = SymbolKind.None)
-            : base(name, null, kind | SymbolKind.Scope)
+            : base(null, name, null, kind | SymbolKind.Scope)
         {
         }
 
@@ -69,10 +70,26 @@ namespace ScoreC.Compile.Analysis
         }
         */
 
-        public void AddSymbol(string name, TypeInfo typeInfo, SymbolKind kind)
+        public Symbol AddSymbol(Span location, string name, TypeInfo typeInfo, SymbolKind kind)
         {
             // FIXME(kai): Log an error when a symbol conflicts with another.
-            symbols.Add(new Symbol(name, typeInfo, kind));
+            var symbol = new Symbol(location, name, typeInfo, kind);
+            symbols.Add(symbol);
+            return symbol;
+        }
+
+        public Symbol FindGlobal(string name) =>
+            symbols.Find(symbol => symbol.Name == name);
+
+        public SymbolTable FindGlobalScope(Symbol global)
+        {
+            for (int i = 0; i < symbols.Count; i++)
+            {
+                var symbol = symbols[i];
+                if (symbol == global && i < symbols.Count - 1)
+                    return symbols[i + 1] as SymbolTable;
+            }
+            return null;
         }
 
         public SymbolTable AddScope(string optName, SymbolKind kind)

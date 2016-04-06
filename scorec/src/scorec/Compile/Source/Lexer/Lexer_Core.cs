@@ -11,22 +11,22 @@ namespace ScoreC.Compile.Source
         /// </summary>
         /// <param name="map"></param>
         /// <returns></returns>
-        public static void Lex(SourceMap map)
+        public static void Lex(Log log, SourceMap file)
         {
-            if (map.Tokens != null)
+            var lexer = new Lexer(log);
+            if (file.Tokens != null)
                 return;
-            var lexer = new Lexer();
-            map.Tokens = lexer.GetTokens(Project.Log, map);
+            file.Tokens = lexer.GetTokens(file);
         }
 
         /// <summary>
         /// The Log this Lexer will write to.
         /// </summary>
-        public Log Log { get; private set; }
+        private Log log;
         /// <summary>
         /// The SourceFile this Lexer is responsible for lexing.
         /// </summary>
-        public SourceMap Map { get; private set; }
+        private SourceMap map;
         /// <summary>
         /// Save the SourceFile's source, I feel like that's not a bad idea.
         /// </summary>
@@ -50,22 +50,23 @@ namespace ScoreC.Compile.Source
         /// </summary>
         private readonly StringBuilder buffer = new StringBuilder();
 
-        private Lexer()
+        private Lexer(Log log)
         {
+            this.log = log;
         }
 
         /// <summary>
         /// Returns a Span covering the current character only.
         /// </summary>
         private Span GetSpan() =>
-            new Span(Map, line, column);
+            new Span(map, line, column);
 
         /// <summary>
         /// Returns a Span starting at the given Span and ending at the current character.
         /// </summary>
         /// <param name="start">The start Span.</param>
         private Span GetSpan(Span start) =>
-            new Span(Map, start.Line, start.Column, line, column);
+            new Span(map, start.Line, start.Column, line, column);
 
         /// <summary>
         /// Determines if the given string is present in the source at the current offset.

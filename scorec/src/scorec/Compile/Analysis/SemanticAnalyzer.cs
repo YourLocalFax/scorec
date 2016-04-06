@@ -1,15 +1,19 @@
 ﻿namespace ScoreC.Compile.Analysis
 {
     using System.Linq;
-    using Source;
     using SyntaxTree;
 
     class SemanticAnalyzer : IAstVisitor
     {
-        public static void Analyze(SourceMap map, SymbolTableBuilder builder)
+        public static void Analyze(Project project)
         {
+            var builder = new SymbolTableBuilder();
             var analyzer = new SemanticAnalyzer(builder);
-            map.Ast.Accept(analyzer);
+
+            foreach (var file in project.Files)
+                file.Ast.Accept(analyzer);
+
+            project.SymbolTable = builder.SymbolTable;
         }
 
         private SymbolTableBuilder builder;
@@ -21,7 +25,8 @@
 
         public void Visit(NodeProcedureDeclaration node)
         {
-            builder.AddSymbol(node.Name, node.TypeInfo, SymbolKind.Procedure);
+            node.IsGlobal = builder.InGlobalScope;
+            node.Symbol = builder.AddSymbol(node.TkName.Span, node.Name, node.TypeInfo, SymbolKind.Procedure);
 
             node.Body.Value.InTailPosition = true;
             if (node.Returns)
@@ -32,20 +37,27 @@
                     (node.Body.Value as NodeBlock).CanBeExpression = false;
             }
 
+            if (!(node.Body.Value is NodeBlock))
+                builder.PushScope(null);
             node.Body.Value.Accept(this);
+            if (!(node.Body.Value is NodeBlock))
+                builder.PopScope();
         }
 
         public void Visit(NodeStructDeclaration node)
         {
-            builder.AddSymbol(node.Name, node.TypeInfo, SymbolKind.Struct);
+            node.IsGlobal = builder.InGlobalScope;
+            node.Symbol = builder.AddSymbol(node.TkName.Span, node.Name, node.TypeInfo, SymbolKind.Struct);
             // TODO(kai): Initializers should be checked
         }
 
         public void Visit(NodeBindingDeclaration node)
         {
-            builder.AddSymbol(node.Binding.Name, node.Binding.DeclaredTypeInfo);
+            node.IsGlobal = builder.InGlobalScope;
+            node.Symbol = builder.AddSymbol(node.Binding.TkName.Span, node.Binding.Name, node.Binding.DeclaredTypeInfo);
             // TODO(kai): Initializer should be checked
-            node.Binding.Value.IsResultRequired = true;
+            if (node.Binding.Value != null)
+                node.Binding.Value.IsResultRequired = true;
         }
 
         public void Visit(NodeAssignment node)

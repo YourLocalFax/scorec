@@ -2,6 +2,7 @@
 
 namespace ScoreC.Compile.SyntaxTree
 {
+    using Analysis;
     using Source;
 
     class NodeBindingDeclaration : Node
@@ -13,6 +14,9 @@ namespace ScoreC.Compile.SyntaxTree
 
         public Binding Binding;
         public NodeExpression Value => Binding.Value;
+
+        public bool IsGlobal;
+        public Symbol Symbol;
 
         public NodeBindingDeclaration(Span start, TokenKind bindingKind, Binding binding)
         {

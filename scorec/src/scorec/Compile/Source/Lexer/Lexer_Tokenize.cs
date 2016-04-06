@@ -13,17 +13,15 @@ namespace ScoreC.Compile.Source
         /// <summary>
         /// </summary>
         /// <returns></returns>
-        public List<Token> GetTokens(Log log, SourceMap map)
+        public List<Token> GetTokens(SourceMap map)
         {
 #if DEBUG
-            Debug.Assert(log != null, "Log must not be null!");
             Debug.Assert(map != null, "Map must not be null!");
 #endif
             // Initialize the data, we're ready to go! (probably...)
-            Log = log;
-            Map = map;
+            this.map = map;
 
-            sourceCached = Map.Source;
+            sourceCached = this.map.Source;
             sourceOffset = 0;
 
             // Begin!
@@ -41,7 +39,7 @@ namespace ScoreC.Compile.Source
                     tokens.Add(token);
                 else if (handleFailureMessage)
                 {
-                    Log.AddError(start, "Failed to lext token at `{0}`.", Current);
+                    this.log.AddError(start, "Failed to lext token at `{0}`.", Current);
                     if (IsEndOfSource)
                         break;
                     Advance();
@@ -49,14 +47,13 @@ namespace ScoreC.Compile.Source
                 EatWhiteSpace();
             }
 
-            Map.EndOfSourceSpan = GetSpan();
+            this.map.EndOfSourceSpan = GetSpan();
 
             // Reset this lexer, we're done for now.
             sourceCached = null;
             sourceOffset = 0;
 
-            Map = null;
-            Log = null;
+            this.map = null;
 
             // Exit!
 
@@ -361,7 +358,7 @@ namespace ScoreC.Compile.Source
                     else
                     {
                         handleFailureMessage = false;
-                        Log.AddError(start, "Unfinished string literal.");
+                        log.AddError(start, "Unfinished string literal.");
                         return null;
                     }
                 }
@@ -371,20 +368,20 @@ namespace ScoreC.Compile.Source
             if (IsEndOfSource)
             {
                 handleFailureMessage = false;
-                Log.AddError(GetSpan(start), "Unfinished string literal, found end of source.");
+                log.AddError(GetSpan(start), "Unfinished string literal, found end of source.");
                 return null;
             }
 
             if (!Expect(delimiter)) // close delimiter
             {
                 handleFailureMessage = false;
-                Log.AddError(start, "Unfinished string literal.");
+                log.AddError(start, "Unfinished string literal.");
                 return null;
             }
 
             var span = GetSpan(start);
             var literal = GetStringFromBuffer();
-            var image = Map.GetSourceAtSpan(span);
+            var image = map.GetSourceAtSpan(span);
 
             return Token.NewStringLiteral(span, literal, image);
         }
@@ -433,7 +430,7 @@ namespace ScoreC.Compile.Source
             if (IsEndOfSource)
             {
                 handleFailureMessage = false;
-                Log.AddError(start, "Expected identifier for directive name, found end of source.");
+                log.AddError(start, "Expected identifier for directive name, found end of source.");
                 return null;
             }
 
@@ -482,7 +479,7 @@ namespace ScoreC.Compile.Source
                         {
                             handleFailureMessage = false;
                             // FIXME(kai): There are multiple invalid locations, we should be specific!
-                            Log.AddError(start, "Invalid digit separator location. FIXME(kai): FIX THIS ERROR IT LOOKS BAD.");
+                            log.AddError(start, "Invalid digit separator location. FIXME(kai): FIX THIS ERROR IT LOOKS BAD.");
                         }
                         Advance();
                     }
@@ -531,13 +528,13 @@ namespace ScoreC.Compile.Source
 
             if (kind == TokenKind.Integer)
             {
-                var image = Map.GetSourceAtSpan(span);
+                var image = map.GetSourceAtSpan(span);
                 foreach (var c in literal)
                 {
                     if (!c.IsDigitInRadix(iRadix))
                     {
                         handleFailureMessage = false;
-                        Log.AddError(span, "Invalid digit `{0}` in radix {1}.", c, iRadix);
+                        log.AddError(span, "Invalid digit `{0}` in radix {1}.", c, iRadix);
                     }
                 }
                 return Token.NewIntegerLiteral(span, literal, iRadix, image);
@@ -549,7 +546,7 @@ namespace ScoreC.Compile.Source
 #endif
                 // FIXME(kai): verify the literal!! Don't make LLVM do it later! This is a lexical check, it should be done in the lexer.
                 // Do float validity checks here
-                return Token.NewFloatLiteral(span, literal, Map.GetSourceAtSpan(span));
+                return Token.NewFloatLiteral(span, literal, map.GetSourceAtSpan(span));
             }
         }
     }

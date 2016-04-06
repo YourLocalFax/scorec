@@ -9,53 +9,110 @@ namespace ScoreC.Compile
     using Source;
     using SyntaxTree;
 
-    static class Project
+    class Project
     {
-        public static readonly Log Log = new Log();
+        public readonly Log Log = new Log();
 
-        private static readonly Dictionary<string, SourceMap> loadedFiles = new Dictionary<string, SourceMap>();
+        public readonly List<SourceMap> Files = new List<SourceMap>();
+        private readonly Queue<SourceMap> mapsToParse = new Queue<SourceMap>();
 
-        private static bool IsFileLoaded(string fullPath) =>
-            loadedFiles.ContainsKey(fullPath);
+        private bool hasFile(string fullPath) =>
+            Files.Exists(file => file.FullPath == fullPath);
 
-        private static SymbolTableBuilder symbolTableBuilder = new SymbolTableBuilder();
-        private static SymbolTable symbols => symbolTableBuilder.SymbolTable;
+        private SymbolTableBuilder symbolTableBuilder = new SymbolTableBuilder();
+        public SymbolTable SymbolTable;
 
-        private static bool ParseFile(SourceMap map)
+        public Project(string filePath)
         {
-            Log.AddInfo(null, "Parsing {0}", map.FullPath);
+            var fullPath = Path.GetFullPath(filePath);
+            LoadFile(fullPath);
+        }
 
-            Lexer.Lex(map);
-            if (Log.HasErrors)
-                return false;
+        private void PrintAndClearLog()
+        {
+            Log.Print();
+            // FIXME(kai): Save these??
+            Log.Clear();
+        }
 
-            Parser.Parse(map);
-            if (Log.HasErrors)
-                return false;
+        public bool Process()
+        {
+            // defer PrintAndClearLog() /# plz
+            // or actually:
 
-            SemanticAnalyzer.Analyze(map, symbolTableBuilder);
-            if (Log.HasErrors)
-                return false;
+            /*
+            defer {
+                Log.Print();
+                Log.Clear();
+            }
+            */
+
+            // that eliminates the extra function <3
+
+            var steps = new Func<bool>[]
+            {
+                () => Parse(),
+                () => Validate(),
+                () => Compile(),
+            };
+
+            foreach (var step in steps)
+            {
+                if (step())
+                {
+                    PrintAndClearLog();
+                    return false;
+                }
+            }
+
+            PrintAndClearLog();
+
+            Console.WriteLine();
+            Console.WriteLine(SymbolTable);
+
+            Console.WriteLine();
 
             return true;
         }
 
-        public static void Create(string filePath)
+        // returns false on succes, true on failure
+        private bool Parse()
         {
-            var fullPath = Path.GetFullPath(filePath);
-            LoadFile(fullPath);
+            while (mapsToParse.Count > 0)
+            {
+                var file = mapsToParse.Dequeue();
+                Log.AddInfo(null, "Parsing {0}", file.FullPath);
 
-            Log.Print();
+                Lexer.Lex(Log, file);
+                if (Log.HasErrors)
+                    continue;
 
-            Console.WriteLine();
-            Console.WriteLine(symbols);
+                Parser.Parse(this, file);
+                if (Log.HasErrors)
+                    continue;
+            }
 
-            Console.WriteLine();
+            return Log.HasErrors;
         }
 
-        private static void LoadFile(string fullPath, Span errorLocation = null)
+        // returns false on succes, true on failure
+        private bool Validate()
         {
-            if (IsFileLoaded(fullPath))
+            SemanticAnalyzer.Analyze(this);
+            SymbolicResolver.Resolve(this);
+
+            return Log.HasErrors;
+        }
+
+        // returns false on succes, true on failure
+        private bool Compile()
+        {
+            return Log.HasErrors;
+        }
+
+        private void LoadFile(string fullPath, Span errorLocation = null)
+        {
+            if (hasFile(fullPath))
                 return;
 
             // TODO(kai): Determine if the file exists!
@@ -71,12 +128,11 @@ namespace ScoreC.Compile
                 return;
             }
 
-            loadedFiles[sourceMap.FullPath] = sourceMap;
-
-            ParseFile(sourceMap);
+            Files.Add(sourceMap);
+            mapsToParse.Enqueue(sourceMap);
         }
 
-        public static void LoadFile(string fromSourceFilePath, string loadPath)
+        public void LoadFile(string fromSourceFilePath, string loadPath)
         {
             string fullPath;
             if (!Path.IsPathRooted(loadPath))

@@ -12,3 +12,5 @@ type cwstring = ^cwchar_t
 extern proc puts(*s8) -> s32
 /# int putchar(int)
 extern proc putchar(s32) -> s32
+/# int printf(char *, ...)
+extern proc printf(*s8, ...) -> s32

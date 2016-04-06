@@ -1,5 +1,6 @@
 ﻿namespace ScoreC.Compile.SyntaxTree
 {
+    using Analysis;
     using Source;
 
     class NodeIdentifier : NodeExpression
@@ -11,6 +12,8 @@
         public Token TkIdentifier;
 
         public string Identifier => TkIdentifier.Identifier;
+
+        public Symbol ReferencedSymbol;
 
         public NodeIdentifier(Token tkIdentifier)
         {

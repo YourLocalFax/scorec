@@ -1,5 +1,6 @@
 ﻿namespace ScoreC.Compile.SyntaxTree
 {
+    using Analysis;
     using Source;
 
     class NodeProcedureDeclaration : Node
@@ -34,6 +35,9 @@
         public ProcedureBody Body;
 
         public bool Returns => (TypeInfo.Returns?.Count ?? 0) > 0;
+
+        public bool IsGlobal;
+        public Symbol Symbol;
 
         public NodeProcedureDeclaration(Token kwProc, Token tkName, ProcedureTypeInfo typeInfo, ProcedureBody body)
         {

@@ -2,6 +2,7 @@
 
 namespace ScoreC.Compile.Analysis
 {
+    using Source;
     using SyntaxTree;
 
     class SymbolTableBuilder
@@ -9,6 +10,7 @@ namespace ScoreC.Compile.Analysis
         public SymbolTable SymbolTable;
 
         private Stack<SymbolTable> scopes = new Stack<SymbolTable>();
+        public bool InGlobalScope => scopes.Count == 1;
 
         public SymbolTableBuilder()
         {
@@ -16,8 +18,8 @@ namespace ScoreC.Compile.Analysis
             scopes.Push(SymbolTable);
         }
 
-        public void AddSymbol(string name, TypeInfo typeInfo, SymbolKind kind = SymbolKind.None) =>
-            scopes.Peek().AddSymbol(name, typeInfo, kind | (scopes.Count == 1 ? SymbolKind.None : SymbolKind.Local));
+        public Symbol AddSymbol(Span location, string name, TypeInfo typeInfo, SymbolKind kind = SymbolKind.None) =>
+            scopes.Peek().AddSymbol(location, name, typeInfo, kind | (scopes.Count == 1 ? SymbolKind.None : SymbolKind.Local));
 
         public void PushScope(string optName, SymbolKind kind = SymbolKind.None)
         {

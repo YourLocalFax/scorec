@@ -1,48 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace ScoreC.Compile.SyntaxTree
 {
-    using System.Threading;
     using Logging;
     using Source;
 
     sealed partial class Parser
     {
-        private static List<Thread> activeThreads = new List<Thread>();
-
         /// <summary>
         /// </summary>
         /// <param name="map"></param>
         /// <returns></returns>
-        public static void Parse(SourceMap map)
+        public static void Parse(Project project, SourceMap file)
         {
-            if (map.Ast != null)
+            var parser = new Parser(project);
+            if (file.Ast != null)
                 return;
-            /*
-            var thread = new Thread(() =>
-            {
-                var parser = new Parser();
-                map.Ast = parser.GetAst(Project.Log, map);
-            });
-            activeThreads.Add(thread);
-            thread.Start();
-            */
-            var parser = new Parser();
-            map.Ast = parser.GetAst(Project.Log, map);
+            file.Ast = parser.GetAst(file);
         }
 
+        private Project project;
         /// <summary>
         /// The Log this Lexer will write to.
         /// </summary>
-        public Log Log { get; private set; }
+        private Log log => project.Log;
         /// <summary>
         /// The SourceFile this Lexer is responsible for lexing.
         /// </summary>
-        public SourceMap Map { get; private set; }
-
+        private SourceMap map;
         /// <summary>
         /// Save the SourceFile's tokens, I feel like that's not a bad idea.
         /// </summary>
@@ -52,8 +37,9 @@ namespace ScoreC.Compile.SyntaxTree
         /// </summary>
         private int tokenOffset = 0;
 
-        private Parser()
+        private Parser(Project project)
         {
+            this.project = project;
         }
     }
 }
