@@ -13,6 +13,7 @@ namespace ScoreC.Compile.SyntaxTree
         public List<Node> Body;
 
         public bool CanBeExpression = true;
+        public bool CreateScope = true;
 
         public NodeBlock(Span tkOpenCurlyBraceStart, List<Node> body)
         {

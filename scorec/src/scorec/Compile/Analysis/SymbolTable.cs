@@ -44,7 +44,7 @@ namespace ScoreC.Compile.Analysis
 
     class SymbolTable : Symbol
     {
-        private List<Symbol> symbols = new List<Symbol>();
+        public List<Symbol> Symbols = new List<Symbol>();
 
         /// <summary>
         /// Base for a symbol table
@@ -74,20 +74,20 @@ namespace ScoreC.Compile.Analysis
         {
             // FIXME(kai): Log an error when a symbol conflicts with another.
             var symbol = new Symbol(location, name, typeInfo, kind);
-            symbols.Add(symbol);
+            Symbols.Add(symbol);
             return symbol;
         }
 
         public Symbol FindGlobal(string name) =>
-            symbols.Find(symbol => symbol.Name == name);
+            Symbols.Find(symbol => symbol.Name == name);
 
         public SymbolTable FindGlobalScope(Symbol global)
         {
-            for (int i = 0; i < symbols.Count; i++)
+            for (int i = 0; i < Symbols.Count; i++)
             {
-                var symbol = symbols[i];
-                if (symbol == global && i < symbols.Count - 1)
-                    return symbols[i + 1] as SymbolTable;
+                var symbol = Symbols[i];
+                if (symbol == global && i < Symbols.Count - 1)
+                    return Symbols[i + 1] as SymbolTable;
             }
             return null;
         }
@@ -95,7 +95,7 @@ namespace ScoreC.Compile.Analysis
         public SymbolTable AddScope(string optName, SymbolKind kind)
         {
             var scope = new SymbolTable(optName, kind);
-            symbols.Add(scope);
+            Symbols.Add(scope);
             return scope;
         }
 
@@ -115,7 +115,7 @@ namespace ScoreC.Compile.Analysis
                 buffer.Append(Name).Append(" : ");
             buffer.AppendLine("{");
 
-            foreach (var sym in symbols)
+            foreach (var sym in Symbols)
             {
                 if (sym is SymbolTable)
                     buffer.AppendLine((sym as SymbolTable).ToString(indentations + 1));

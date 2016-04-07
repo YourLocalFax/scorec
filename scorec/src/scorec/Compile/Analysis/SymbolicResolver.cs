@@ -44,16 +44,13 @@
         private Symbol GetReferencedSymbol(string ident)
         {
             var refersTo = walker.SymbolTable.FindGlobal(ident);
-
-            if (refersTo != null)
-                log.AddInfo(null, "`{0}`, in this context, refers to something in global scope.", ident);
-            else log.AddInfo(null, "`{0}`, in this context, does not refer to something in global scope.", ident);
-
             return refersTo;
         }
 
         public void Visit(NodeStructDeclaration node)
         {
+            if (!node.IsGlobal)
+                walker.WalkSymbol(node.Symbol);
             // TODO(kai): check and update the types
         }
 
@@ -150,26 +147,27 @@
 
         public void Visit(NodeBindingDeclaration node)
         {
-            walker.WalkSymbol(node.Symbol);
+            if (!node.IsGlobal)
+                walker.WalkSymbol(node.Symbol);
             // NOTE(kai): type inference/checking happens after symbolic resolution
-            node.Value.Accept(this);
+            node.Value?.Accept(this);
         }
 
         public void Visit(NodeProcedureDeclaration node)
         {
             // FIXME(kai): resolve type
 
+            if (!node.IsGlobal)
+                walker.WalkSymbol(node.Symbol);
+
             if (node.Body == null)
                 return;
 
             if (node.IsGlobal)
                 walker.StepIntoGlobalScope(node.Symbol);
-            else
-            {
-                // FIXME(kai): step into local scopes
-            }
-
+            else walker.StepIntoScope();
             node.Body.Value.Accept(this);
+            walker.StepOutOfScope();
         }
 
         public void Visit(NodeLoad node)

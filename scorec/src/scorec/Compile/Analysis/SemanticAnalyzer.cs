@@ -37,11 +37,9 @@
                     (node.Body.Value as NodeBlock).CanBeExpression = false;
             }
 
-            if (!(node.Body.Value is NodeBlock))
-                builder.PushScope(null);
+            builder.PushScope(null);
             node.Body.Value.Accept(this);
-            if (!(node.Body.Value is NodeBlock))
-                builder.PopScope();
+            builder.PopScope();
         }
 
         public void Visit(NodeStructDeclaration node)
@@ -146,9 +144,11 @@
             if (last is NodeExpression)
                 (last as NodeExpression).IsResultRequired = node.IsResultRequired;
 
-            builder.PushScope(null);
+            if (node.CreateScope)
+                builder.PushScope(null);
             node.Body.ForEach(n => n.Accept(this));
-            builder.PopScope();
+            if (node.CreateScope)
+                builder.PopScope();
         }
 
         public void Visit(NodeInfix node)

@@ -67,11 +67,6 @@ namespace ScoreC.Compile
 
             PrintAndClearLog();
 
-            Console.WriteLine();
-            Console.WriteLine(SymbolTable);
-
-            Console.WriteLine();
-
             return true;
         }
 
@@ -99,6 +94,7 @@ namespace ScoreC.Compile
         private bool Validate()
         {
             SemanticAnalyzer.Analyze(this);
+            Console.WriteLine(SymbolTable);
             SymbolicResolver.Resolve(this);
 
             return Log.HasErrors;
