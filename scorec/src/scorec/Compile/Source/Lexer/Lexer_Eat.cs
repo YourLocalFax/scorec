@@ -24,7 +24,7 @@ namespace ScoreC.Compile.Source
         {
 #if DEBUG
             Debug.Assert(!IsEndOfSource && HasNext, "Not enough characters exist to start a line comment!");
-            Debug.Assert(Current == '/' && Next == '#', "Line comment delimiter not found!");
+            Debug.Assert(Current == '/' && Next == '/', "Line comment delimiter not found!");
 #endif
             // TODO(kai): var start = GetSpan();
             // Eat characters until we hit the end of the line or the end of the source file.

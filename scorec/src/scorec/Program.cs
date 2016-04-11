@@ -1,91 +1,303 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 
 using LLVMSharp;
 
+using IniParser;
+
 namespace ScoreC
 {
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
     using Compile;
-    using Compile.Logging;
-    using Compile.Source;
-    using Compile.SyntaxTree;
+    using IniParser.Model;
 
     static class Program
     {
+        const uint MAJOR = 0;
+        const uint MINOR = 1;
+        const uint REVISION = 0;
+
+        const string BUILD = "nightly";
+
+        static string VERSION_STRING = MAJOR + "." + MINOR + "." + REVISION + " " + BUILD;
+
+        const string DESC = "Score's project manager";
+        const string HELP = @"Usage:
+   score <command> [<args> ...]
+   score [options]
+
+Options:
+   -h, --help        Display this message
+   -V, --version     Print version information
+   -v, --verbose     Use verbose output
+   -q, --quiet       Disable output
+
+Common commands:
+   new       Create a new score project
+   build     Compile the current project
+   run       Compile and execute the current project
+   add       Add a new source file to the current project
+   remove    Remove a source fil from the current project
+
+See `score help <command>` for more information on a specific command.";
+
+        struct CommandData
+        {
+            public CommandFunction Command;
+            public string Description;
+        }
+
+        delegate void CommandFunction(string[] args);
+        static Dictionary<string, CommandData> commands = new Dictionary<string, CommandData>()
+        {
+            { "new", new CommandData { Command = Cmd_New, Description = @"" } },
+
+            { "add", new CommandData { Command = Cmd_Add, Description = @"" }  },
+
+            { "remove", new CommandData { Command = Cmd_Remove, Description = @"" }  },
+
+            { "build", new CommandData { Command = Cmd_Build, Description = @"" }  },
+
+            { "run", new CommandData { Command = Cmd_Run, Description = @"" }  },
+        };
+
+        public static void Execute(string[] args)
+        {
+        }
+
+        public static void PrintHelp(string message = DESC)
+        {
+            Console.WriteLine(message);
+            Console.WriteLine();
+            Console.WriteLine(HELP);
+        }
+
+        public static void PrintVersion()
+        {
+            Console.WriteLine("score " + VERSION_STRING);
+        }
+
         static void Main(string[] args)
         {
-            /*  LLVM supported types:
-
-            INT:
-            
-            LLVM.Int1Type();
-            LLVM.Int8Type();
-            LLVM.Int16Type();
-            LLVM.Int32Type();
-            LLVM.Int64Type();
-            LLVM.IntType(uint);
-
-            FLOAT:
-
-            LLVM.HalfType();
-            LLVM.FloatType();
-            LLVM.DoubleType();
-            LLVM.X86FP80Type();
-            LLVM.FP128Type();
-            LLVM.PPCFP128Type();
-
-            * /
-
-            // That's all we have, actually, wait.. how do..
-            {
-                var context = LLVM.ContextCreate();
-                var module = LLVM.ModuleCreateWithNameInContext("module", context);
-                // "ContextCreate", "CreateBuilder" such consistent LLVM thanks </3
-                var builder = LLVM.CreateBuilderInContext(context);
-
-                var fnTy = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { }, false);
-                var fn = LLVM.AddFunction(module, "main", fnTy);
-
-                var entry = LLVM.AppendBasicBlockInContext(context, fn, ".entry");
-
-                LLVM.PositionBuilderAtEnd(builder, entry);
-                var test = LLVM.BuildAlloca(builder, LLVM.FP128Type(), "test");
-                LLVM.BuildStore(builder, LLVM.ConstRealOfString(LLVM.FP128Type(), "9.9e-99"), test);
-                // This works, of course, but what if it doesn't fit into a double?
-                var test2 = LLVM.BuildAlloca(builder, LLVM.FP128Type(), "test");
-                LLVM.BuildStore(builder, LLVM.ConstReal(LLVM.FP128Type(), 9.9e-99), test2);
-
-                LLVM.DumpModule(module);
-            }
-
-            LLVM.ConstIntOfString(LLVM.IntType(128), "18446744073709551616", (char)10);
-
-            //*/
-
             if (args.Length == 0)
             {
-                // throw new ArgumentException("Need file to compile!");
-                Console.WriteLine("Expected file to compile. Duh.");
-                Exit();
+                PrintHelp();
                 return;
             }
 
-            var fileName = args[0];
+            // There must be at least one argument:
+            CommandData command;
+            if (commands.TryGetValue(args[0], out command))
+            {
+                var newArgs = new string[args.Length - 1];
+                Array.Copy(args, 1, newArgs, 0, newArgs.Length);
+                command.Command(newArgs);
+                return;
+            }
+            else
+            {
+                if (args.Length == 1 && (args[0] == "-V" || args[0] == "--version"))
+                {
+                    PrintVersion();
+                    return;
+                }
 
-            var project = new Project(fileName);
-            var success = project.Process();
-
-            Exit();
+                PrintHelp();
+            }
         }
 
-        private static void Exit()
+        private static void Cmd_New(string[] args)
         {
-#if DEBUG
-            Console.Write("Press any key to exit...");
-            Console.ReadKey();
-            Environment.Exit(0);
-#endif
+            if (args.Length == 0)
+            {
+                PrintHelp("score new <name>");
+                return;
+            }
+
+            var forceNew = false;
+
+            if (args.Length == 2)
+            {
+                if (args.First() == "-f" || args.First() == "--force")
+                    forceNew = true;
+                else
+                {
+                    PrintHelp("score new <name>");
+                    return;
+                }
+            }
+
+            var projectName = args.Last();
+            var projectDir = Path.GetFullPath(projectName);
+
+            if (Directory.Exists(projectDir) && Directory.EnumerateFileSystemEntries(projectDir).Any())
+            {
+                if (forceNew)
+                    Directory.Delete(projectDir, true);
+                else
+                {
+                    Console.WriteLine("Cannot create new project `" + projectName + "`, directory already exists and is not empty.");
+                    return;
+                }
+            }
+
+            try
+            {
+                // Create the directories
+                Directory.CreateDirectory(projectDir);
+                Directory.CreateDirectory(Path.Combine(projectDir, "src"));
+
+                var project = new Project(projectDir);
+                //Console.WriteLine(projectDir);
+                project.MainFile = "main.score";
+                project.UpdateSprojFile();
+
+                // Create the main source file
+                using (var mainFile = File.CreateText(Path.Combine(projectDir, "src", "main.score")))
+                {
+                    mainFile.WriteLine();
+                    mainFile.WriteLine("proc main() {");
+                    mainFile.WriteLine("}");
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Failed to create new project `" + projectName + "`: " + e.Message);
+                return;
+            }
+        }
+
+        private static void Cmd_Add(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                PrintHelp("score add [options] <file_or_folder>");
+                return;
+            }
+
+            string projectDir;
+            if (args.Length == 2)
+            {
+                try
+                {
+                    projectDir = Path.GetFullPath(args.Last());
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Could not find the path specified.");
+                    return;
+                }
+            }
+            else projectDir = Path.GetFullPath("./");
+
+            var fileName = args.First();
+
+            var project = new Project(projectDir);
+            var filePath = Path.Combine(project.SourceDirectory, fileName + ".score");
+
+            Directory.CreateDirectory(Directory.GetParent(filePath).FullName);
+            File.CreateText(filePath)?.Close();
+
+            project.AddFile(fileName + ".score");
+            project.UpdateSprojFile();
+        }
+
+        private static void Cmd_Remove(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                PrintHelp("score add [options] <file_or_folder>");
+                return;
+            }
+
+            string projectDir;
+            if (args.Length == 2)
+            {
+                try
+                {
+                    projectDir = Path.GetFullPath(args.Last());
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Could not find the path specified.");
+                    return;
+                }
+            }
+            else projectDir = Path.GetFullPath("./");
+
+            var fileName = args.First();
+
+            var project = new Project(projectDir);
+            var filePath = Path.Combine(project.SourceDirectory, fileName + ".score");
+
+            project.RemoveFile(fileName + ".score", true);
+            project.UpdateSprojFile();
+        }
+
+        private static void Cmd_Build(string[] args)
+        {
+            if (args.Length > 1)
+            {
+                PrintHelp("score build [<project_path>]");
+                return;
+            }
+
+            string projectDir;
+            if (args.Length == 1)
+            {
+                try
+                {
+                    projectDir = Path.GetFullPath(args.Single());
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Could not find the path specified.");
+                    return;
+                }
+            }
+            else projectDir = Path.GetFullPath("./");
+
+            Build(projectDir);
+        }
+
+        private static void Cmd_Run(string[] args)
+        {
+            if (args.Length > 1)
+            {
+                PrintHelp("score run [<project_path>]");
+                return;
+            }
+
+            string projectDir;
+            if (args.Length == 1)
+            {
+                try
+                {
+                    projectDir = Path.GetFullPath(args.Single());
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Could not find the path specified.");
+                    return;
+                }
+            }
+            else projectDir = Path.GetFullPath("./");
+
+            BuildAndRun(projectDir);
+        }
+
+        private static void Build(string projectDir)
+        {
+            var project = new Project(projectDir);
+            project.Build();
+        }
+
+        private static void BuildAndRun(string projectDir)
+        {
+            var project = new Project(projectDir);
+            project.Build();
+            project.Run();
         }
     }
 }

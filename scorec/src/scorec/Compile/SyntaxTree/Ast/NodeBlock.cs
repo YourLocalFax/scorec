@@ -22,7 +22,8 @@ namespace ScoreC.Compile.SyntaxTree
 
             // NOTE(kai): IsResultRequired cannot be properly set for the body because we don't yet know if this block requires a result.
 
-            body.Last().InTailPosition = true;
+            if (body.Count > 0)
+                body.Last().InTailPosition = true;
         }
 
         public override void Accept(IAstVisitor visitor) => visitor.Visit(this);

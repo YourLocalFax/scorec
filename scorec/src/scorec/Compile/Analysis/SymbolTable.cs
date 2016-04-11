@@ -106,7 +106,7 @@ namespace ScoreC.Compile.Analysis
             for (int i = 0; i < indentations; i++)
                 buffer.Append("  ");
 
-            buffer.Append("/# ").AppendLine(Kind.ToString().Replace(",", ""));
+            buffer.Append("// ").AppendLine(Kind.ToString().Replace(",", ""));
 
             for (int i = 0; i < indentations; i++)
                 buffer.Append("  ");
@@ -126,7 +126,7 @@ namespace ScoreC.Compile.Analysis
                         indents.Append("  ");
 
                     buffer.Append(indents.ToString());
-                    buffer.Append("/# ").AppendLine(sym.Kind.ToString().Replace(",", ""));
+                    buffer.Append("// ").AppendLine(sym.Kind.ToString().Replace(",", ""));
 
                     buffer.Append(indents.ToString());
                     buffer.AppendLine(sym.ToString().Replace("\n", "\n" + indents));

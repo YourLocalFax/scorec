@@ -139,10 +139,13 @@
 
         public void Visit(NodeBlock node)
         {
-            var last = node.Body.Last();
-            last.InTailPosition = node.InTailPosition;
-            if (last is NodeExpression)
-                (last as NodeExpression).IsResultRequired = node.IsResultRequired;
+            if (node.Body.Count > 0)
+            {
+                var last = node.Body.Last();
+                last.InTailPosition = node.InTailPosition;
+                if (last is NodeExpression)
+                    (last as NodeExpression).IsResultRequired = node.IsResultRequired;
+            }
 
             if (node.CreateScope)
                 builder.PushScope(null);

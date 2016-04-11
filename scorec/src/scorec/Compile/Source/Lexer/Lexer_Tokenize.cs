@@ -67,10 +67,10 @@ namespace ScoreC.Compile.Source
             Debug.Assert(!IsEndOfSource, "No Tokens!! Called at end of source!");
 #endif
             // NOTE(kai): Could use matchest, but this seems to be a little less verbose, though more confusing I guess.
-            if (Matches("/#") || Matches("/*"))
+            if (Matches("//") || Matches("/*"))
             {
                 handleFailureMessage = false;
-                if (Next == '#')
+                if (Next == '/')
                     EatLineComment();
                 else EatBlockComment();
                 EatWhiteSpace();
