@@ -8,7 +8,6 @@ using IniParser.Model;
 
 namespace ScoreC
 {
-    using System.Diagnostics;
     using Compile.Analysis;
     using Compile.Logging;
     using Compile.Source;
@@ -16,6 +15,84 @@ namespace ScoreC
 
     class Project
     {
+        const string MAIN_TEMPLATE = @"
+proc main() {
+}
+";
+
+        public static bool CreateNew(string projectDir, string projectName, bool forceCreate)
+        {
+            Console.WriteLine(projectDir);
+            Console.WriteLine(projectName);
+
+            var existed = Directory.Exists(projectDir);
+
+            // Check if we can actually create a new project
+            if (existed &&
+                // Check that it's not empty
+                Directory.EnumerateFileSystemEntries(projectDir).Any())
+            {
+                if (forceCreate)
+                {
+                    try
+                    {
+                        Directory.Delete(projectDir, true);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Cannot create new project `" + projectName + "`, " + e.Message);
+                        return false;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Cannot create new project `" + projectName + "`, directory already exists and is not empty.");
+                    return false;
+                }
+            }
+
+            try
+            {
+                // Make sure the project directory exists
+                Directory.CreateDirectory(projectDir);
+
+                // Create the source directory
+                var sourceDir = Path.Combine(projectDir, "src");
+                Directory.CreateDirectory(sourceDir);
+
+                // Create the `main` source file
+                var mainFile = Path.Combine(sourceDir, "main.score");
+                File.WriteAllText(mainFile, MAIN_TEMPLATE);
+
+                // Create the `.sproj` project file
+                var projectFile = Path.Combine(projectDir, ".sproj");
+                using (var sproj = File.CreateText(projectFile))
+                {
+                    sproj.WriteLine("main_file = main.score");
+                }
+            }
+            catch (Exception e)
+            {
+                if (!existed)
+                {
+                    try
+                    {
+                        Directory.Delete(projectDir, true);
+                    }
+                    catch (Exception) { }
+                }
+                Console.WriteLine("Cannot create new project `" + projectName + "`, " + e.Message);
+                return false;
+            }
+
+            // Success!
+            return true;
+        }
+
+
+
+
+
         private readonly IniData data;
 
         public readonly string RootDirectory, Name;

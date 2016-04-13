@@ -115,12 +115,12 @@ See `score help <command>` for more information on a specific command.";
                 return;
             }
 
-            var forceNew = false;
+            var forceCreate = false;
 
             if (args.Length == 2)
             {
                 if (args.First() == "-f" || args.First() == "--force")
-                    forceNew = true;
+                    forceCreate = true;
                 else
                 {
                     PrintHelp("score new <name>");
@@ -131,41 +131,7 @@ See `score help <command>` for more information on a specific command.";
             var projectName = args.Last();
             var projectDir = Path.GetFullPath(projectName);
 
-            if (Directory.Exists(projectDir) && Directory.EnumerateFileSystemEntries(projectDir).Any())
-            {
-                if (forceNew)
-                    Directory.Delete(projectDir, true);
-                else
-                {
-                    Console.WriteLine("Cannot create new project `" + projectName + "`, directory already exists and is not empty.");
-                    return;
-                }
-            }
-
-            try
-            {
-                // Create the directories
-                Directory.CreateDirectory(projectDir);
-                Directory.CreateDirectory(Path.Combine(projectDir, "src"));
-
-                var project = new Project(projectDir);
-                //Console.WriteLine(projectDir);
-                project.MainFile = "main.score";
-                project.UpdateSprojFile();
-
-                // Create the main source file
-                using (var mainFile = File.CreateText(Path.Combine(projectDir, "src", "main.score")))
-                {
-                    mainFile.WriteLine();
-                    mainFile.WriteLine("proc main() {");
-                    mainFile.WriteLine("}");
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Failed to create new project `" + projectName + "`: " + e.Message);
-                return;
-            }
+            Project.CreateNew(projectDir, projectName, forceCreate);
         }
 
         private static void Cmd_Add(string[] args)
