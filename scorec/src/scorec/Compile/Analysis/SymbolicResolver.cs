@@ -9,7 +9,7 @@
         public static void Resolve(Project project)
         {
             var walker = new SymbolTableWalker(project.SymbolTable);
-            foreach (var file in project.Files)
+            foreach (var file in project.SourceMaps)
             {
                 var resolver = new SymbolicResolver(project, file, walker);
                 resolver.Resolve();

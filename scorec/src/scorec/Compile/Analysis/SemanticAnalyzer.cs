@@ -10,7 +10,7 @@
             var builder = new SymbolTableBuilder();
             var analyzer = new SemanticAnalyzer(builder);
 
-            foreach (var file in project.Files)
+            foreach (var file in project.SourceMaps)
                 file.Ast.Accept(analyzer);
 
             project.SymbolTable = builder.SymbolTable;

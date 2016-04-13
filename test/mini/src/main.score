@@ -1,9 +1,4 @@
 
-//use vec2
-
-// #load "../lib/ffi/c.score"
-#load "../lib/math/vec2.score"
-
 proc main() {
    let v_stack0 : vec2
    v_stack0.x = 1

@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-
-using IniParser;
-using IniParser.Model;
 
 namespace ScoreC
 {
@@ -15,167 +11,44 @@ namespace ScoreC
 
     class Project
     {
-        const string MAIN_TEMPLATE = @"
-proc main() {
-}
-";
-
-        public static bool CreateNew(string projectDir, string projectName, bool forceCreate)
-        {
-            Console.WriteLine(projectDir);
-            Console.WriteLine(projectName);
-
-            var existed = Directory.Exists(projectDir);
-
-            // Check if we can actually create a new project
-            if (existed &&
-                // Check that it's not empty
-                Directory.EnumerateFileSystemEntries(projectDir).Any())
-            {
-                if (forceCreate)
-                {
-                    try
-                    {
-                        Directory.Delete(projectDir, true);
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine("Cannot create new project `" + projectName + "`, " + e.Message);
-                        return false;
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Cannot create new project `" + projectName + "`, directory already exists and is not empty.");
-                    return false;
-                }
-            }
-
-            try
-            {
-                // Make sure the project directory exists
-                Directory.CreateDirectory(projectDir);
-
-                // Create the source directory
-                var sourceDir = Path.Combine(projectDir, "src");
-                Directory.CreateDirectory(sourceDir);
-
-                // Create the `main` source file
-                var mainFile = Path.Combine(sourceDir, "main.score");
-                File.WriteAllText(mainFile, MAIN_TEMPLATE);
-
-                // Create the `.sproj` project file
-                var projectFile = Path.Combine(projectDir, ".sproj");
-                using (var sproj = File.CreateText(projectFile))
-                {
-                    sproj.WriteLine("main_file = main.score");
-                }
-            }
-            catch (Exception e)
-            {
-                if (!existed)
-                {
-                    try
-                    {
-                        Directory.Delete(projectDir, true);
-                    }
-                    catch (Exception) { }
-                }
-                Console.WriteLine("Cannot create new project `" + projectName + "`, " + e.Message);
-                return false;
-            }
-
-            // Success!
-            return true;
-        }
-
-
-
-
-
-        private readonly IniData data;
-
-        public readonly string RootDirectory, Name;
+        public readonly ProjectData Data;
 
         public readonly Log Log = new Log();
 
-        public readonly List<SourceMap> Files = new List<SourceMap>();
+        public readonly List<SourceMap> SourceMaps = new List<SourceMap>();
         private readonly Queue<SourceMap> mapsToParse = new Queue<SourceMap>();
 
         private SymbolTableBuilder symbolTableBuilder;
         public SymbolTable SymbolTable;
 
-        public string MainFile
+        private string sourceDir;
+
+        public Project(string projectDir, ProjectData data)
         {
-            get
-            {
-                string result;
-                if (data.TryGetKey("main_file", out result))
-                    return Path.Combine(SourceDirectory, result);
-                else throw new ArgumentException(Name + " does not specify a main file.");
-            }
-            set { data.Global.AddKey("main_file", value); }
-        }
-
-        public string SourceDirectory => Path.Combine(RootDirectory, "src");
-
-        public Project(string projectDir)
-        {
-            RootDirectory = projectDir;
-
-            var sprojFiles = Directory.GetFiles(projectDir, "*.sproj");
-            if (sprojFiles.Length > 1)
-                throw new ArgumentException(projectDir + " contains multiple score project (.sproj) files.");
-
-            string sprojFile;
-            if (sprojFiles.Length == 1)
-                sprojFile = sprojFiles.Single();
-            else
-            {;
-                sprojFile = Path.Combine(projectDir, Path.GetFileName(projectDir) + ".sproj");
-                File.CreateText(sprojFile).Close();
-            }
-            Name = Path.GetFileNameWithoutExtension(sprojFile);
-
-            data = new FileIniDataParser().ReadFile(sprojFile);
+            sourceDir = Path.Combine(projectDir, "src");
+            Data = data;
         }
 
         public void AddFile(string filePath)
         {
-            string fileData;
-            if (data.TryGetKey("files", out fileData))
-                fileData = "";
-            if (string.IsNullOrWhiteSpace(fileData))
-                fileData = filePath;
-            else fileData = fileData + Path.PathSeparator + filePath;
-            data.Global.AddKey("files", fileData);
+            if (!Data.IncludedFiles.Contains(filePath))
+                Data.IncludedFiles.Add(filePath);
         }
 
         public void RemoveFile(string filePath, bool deleteFile)
         {
-            string fileData;
-            if (!data.TryGetKey("files", out fileData))
-                return;
-            List<string> files = new List<string>(fileData.Split(Path.PathSeparator));
-            files.Remove(filePath);
-            data.Global.RemoveKey("files");
-            var newFileData = string.Join(Path.PathSeparator.ToString(), files);
-            if (!string.IsNullOrWhiteSpace(newFileData))
-                data.Global.AddKey("files", newFileData);
-            if (deleteFile)
-                File.Delete(Path.Combine(SourceDirectory, filePath));
-        }
-
-        public void UpdateSprojFile()
-        {
-            var iniData = data.ToString();
-            File.WriteAllText(Path.Combine(RootDirectory, Name + ".sproj"), iniData);
+            if (Data.IncludedFiles.Contains(filePath))
+            {
+                Data.IncludedFiles.Remove(filePath);
+                if (deleteFile)
+                    File.Delete(Path.Combine(sourceDir, filePath));
+            }
         }
 
         private bool hasFile(string fullPath) =>
-            Files.Exists(file => file.FullPath == fullPath);
+            SourceMaps.Exists(file => file.FullPath == fullPath);
 
-        private void LoadFile(string fullPath, Span errorLocation = null)
+        private void LoadSource(string fullPath, Span errorLocation = null)
         {
             if (hasFile(fullPath))
                 return;
@@ -193,11 +66,11 @@ proc main() {
                 return;
             }
 
-            Files.Add(sourceMap);
+            SourceMaps.Add(sourceMap);
             mapsToParse.Enqueue(sourceMap);
         }
 
-        public void LoadFile(string fromSourceFilePath, string loadPath)
+        public void LoadSource(string fromSourceFilePath, string loadPath)
         {
             string fullPath;
             if (!Path.IsPathRooted(loadPath))
@@ -207,7 +80,7 @@ proc main() {
             }
             else fullPath = loadPath;
 
-            LoadFile(fullPath);
+            LoadSource(fullPath);
         }
 
         private void PrintAndClearLog()
@@ -217,24 +90,26 @@ proc main() {
             Log.Clear();
         }
 
+        public bool BuildAndRun()
+        {
+            if (!Build())
+                return false;
+            // TODO(kai): run the program
+            return true;
+        }
+
         public bool Build()
         {
             Log.Clear();
 
-            Files.Clear();
+            SourceMaps.Clear();
             mapsToParse.Clear();
 
             symbolTableBuilder = new SymbolTableBuilder();
             SymbolTable = null;
 
-            LoadFile(MainFile);
-
-            string fileData;
-            if (data.TryGetKey("files", out fileData))
-            {
-                foreach (var filePath in fileData.Split(Path.PathSeparator))
-                    LoadFile(Path.Combine(SourceDirectory, filePath));
-            }
+            foreach (var filePath in Data.IncludedFiles)
+                LoadSource(Path.Combine(sourceDir, filePath));
 
             var steps = new Action[]
             {

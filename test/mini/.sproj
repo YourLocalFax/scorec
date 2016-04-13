@@ -1,0 +1,6 @@
+<project name="mini" source_dir="src">
+  <include>
+    <file name="main.score" />
+    <file name="vec2.score" />
+  </include>
+</project>

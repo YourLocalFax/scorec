@@ -95,7 +95,7 @@ namespace ScoreC.Compile.SyntaxTree
                 var loadPath = Current.StringLiteral;
                 Advance(); // string literal
 
-                project.LoadFile(start.Map.FullPath, loadPath);
+                project.LoadSource(start.Map.FullPath, loadPath);
 
                 // don't return a token, but don't error either.
                 handleFailureMessage = false;

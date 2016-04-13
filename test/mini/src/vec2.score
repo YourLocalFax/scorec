@@ -1,0 +1,2 @@
+
+struct vec2(x : r32, y : r32)
