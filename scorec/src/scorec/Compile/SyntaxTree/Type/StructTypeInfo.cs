@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
@@ -68,14 +69,42 @@ namespace ScoreC.Compile.SyntaxTree
                 buffer.Append(string.Join(", ", Parameters));
                 buffer.Append(")");
             }
-            buffer.AppendLine(" {");
 
-            foreach (var field in Fields)
-                buffer.AppendLine("   " + field);
+            if (Fields.Count > 0)
+            {
+                buffer.AppendLine(" {");
 
-            buffer.Append("}");
+                foreach (var field in Fields)
+                    buffer.AppendLine("   " + field);
+
+                buffer.Append("}");
+            }
 
             return buffer.ToString();
+        }
+
+        public bool TryGetFieldInfo(string fieldName, out FieldInfo fieldInfo)
+        {
+            foreach (var param in Parameters)
+            {
+                if (param.Name == fieldName)
+                {
+                    fieldInfo = param;
+                    return true;
+                }
+            }
+
+            foreach (var field in Fields)
+            {
+                if (field.Name == fieldName)
+                {
+                    fieldInfo = field;
+                    return true;
+                }
+            }
+
+            fieldInfo = null;
+            return false;
         }
     }
 }

@@ -1,17 +1,62 @@
 ﻿using System;
-
-using LLVMSharp;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace ScoreC
 {
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Xml;
-    using Compile;
+    using NDesk.Options;
 
     static class Program
     {
+        struct NoCommandArgData
+        {
+            public bool PrintVersion;
+            public bool GetHelp;
+        }
+
+        static void Main(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                PrintHelp();
+                return;
+            }
+
+            // There must be at least one argument:
+            CommandData command;
+            if (commands.TryGetValue(args[0], out command))
+            {
+                var newArgs = new string[args.Length - 1];
+                Array.Copy(args, 1, newArgs, 0, newArgs.Length);
+
+                command.Command(newArgs);
+            }
+            else
+            {
+                var data = new NoCommandArgData();
+
+                var opts = new OptionSet()
+                {
+                    { "V|version", b => data.PrintVersion = b != null },
+                    { "h|help", b => data.GetHelp = b != null },
+                };
+
+                var extra = opts.Parse(args);
+                var isValid = extra.Count == 0 && (data.PrintVersion != data.GetHelp);
+
+                if (isValid && data.PrintVersion)
+                    PrintVersion();
+                else PrintHelp();
+            }
+
+#if DEBUG
+            Console.WriteLine();
+            Console.WriteLine("Press any key to continue...");
+            Console.ReadKey();
+#endif
+        }
+
         const uint MAJOR = 0;
         const uint MINOR = 1;
         const uint REVISION = 0;
@@ -194,15 +239,15 @@ proc main() {
             return project.BuildAndRun();
         }
 
-        public static bool AddNewFile(out string message, string projectDir, string fileName, bool forceCreate)
+        public static bool AddNewFile(out string message, Cmd_AddArgData data)
         {
-            var projectData = GetProjectData(out message, ref projectDir);
+            var projectData = GetProjectData(out message, ref data.ProjectDir);
             if (projectData == null)
                 return false;
 
             message = null;
 
-            var newFilePath = Path.Combine(projectDir, "src", fileName + ".score");
+            var newFilePath = Path.Combine(data.ProjectDir, "src", data.FileName + ".score");
             var newFileDirectory = Directory.GetParent(newFilePath).FullName;
 
             if (!Directory.Exists(newFileDirectory))
@@ -222,7 +267,7 @@ proc main() {
             {
                 if (File.Exists(newFilePath))
                 {
-                    if (!forceCreate)
+                    if (!data.ForceCreateNew)
                     {
                         message = "File `" + newFilePath + "` already exists, cannot create new file.";
                         return false;
@@ -232,31 +277,60 @@ proc main() {
                 File.CreateText(newFilePath);
             }
 
-            projectData.IncludedFiles.Add(fileName + ".score");
-            ProjectData.WriteToFile(projectData, projectDir);
+            projectData.IncludedFiles.Add(data.FileName + ".score");
+            ProjectData.WriteToFile(projectData, data.ProjectDir);
 
             return true;
         }
 
-        public static bool IncludeFile(out string message, string projectDir, string fileName)
+        public static bool IncludeFile(out string message, Cmd_IncludeArgData data)
         {
-            var projectData = GetProjectData(out message, ref projectDir);
+            var projectData = GetProjectData(out message, ref data.ProjectDir);
             if (projectData == null)
                 return false;
 
             message = null;
 
-            var filePath = Path.Combine(projectDir, "src", fileName + ".score");
-
-            if (!File.Exists(filePath))
+            var dirPath = Path.Combine(data.ProjectDir, "src", data.FileName);
+            if (Directory.Exists(dirPath))
             {
-                message = "Could not find a file at `" + filePath + "`, cannot include it.";
-                return false;
+                var sourceDir = Path.Combine(data.ProjectDir, "src");
+
+                Action<string> IncludeAll = null;
+                IncludeAll = directory =>
+                {
+                    if (!Directory.Exists(directory))
+                        return;
+                    var files = Directory.EnumerateFileSystemEntries(directory);
+                    foreach (var file in files)
+                    {
+                        if (Directory.Exists(file) && data.Recursive)
+                            IncludeAll(file);
+                        else if (Path.GetExtension(file) == ".score")
+                        {
+                            var relPath = file.Substring(sourceDir.Length + 1);
+                            if (!projectData.IncludedFiles.Contains(relPath))
+                                projectData.IncludedFiles.Add(relPath);
+                        }
+                    }
+                };
+
+                IncludeAll(dirPath);
+            }
+            else
+            {
+                var filePath = dirPath + ".score";
+
+                if (!File.Exists(filePath))
+                {
+                    message = "Could not find a file at `" + filePath + "`, cannot include it.";
+                    return false;
+                }
+
+                projectData.IncludedFiles.Add(data.FileName + ".score");
             }
 
-            projectData.IncludedFiles.Add(fileName + ".score");
-            ProjectData.WriteToFile(projectData, projectDir);
-
+            ProjectData.WriteToFile(projectData, data.ProjectDir);
             return true;
         }
 
@@ -315,33 +389,9 @@ proc main() {
             Console.WriteLine("score " + VERSION_STRING);
         }
 
-        static void Main(string[] args)
+        public struct Cmd_NewArgData
         {
-            if (args.Length == 0)
-            {
-                PrintHelp();
-                return;
-            }
-
-            // There must be at least one argument:
-            CommandData command;
-            if (commands.TryGetValue(args[0], out command))
-            {
-                var newArgs = new string[args.Length - 1];
-                Array.Copy(args, 1, newArgs, 0, newArgs.Length);
-                command.Command(newArgs);
-                return;
-            }
-            else
-            {
-                if (args.Length == 1 && (args[0] == "-V" || args[0] == "--version"))
-                {
-                    PrintVersion();
-                    return;
-                }
-
-                PrintHelp();
-            }
+            public bool ForceCreateNew;
         }
 
         private static void Cmd_New(string[] args)
@@ -352,90 +402,113 @@ proc main() {
                 return;
             }
 
-            var forceCreate = false;
+            var data = new Cmd_NewArgData();
 
-            if (args.Length == 2)
+            var opts = new OptionSet()
             {
-                if (args.First() == "-f" || args.First() == "--force")
-                    forceCreate = true;
-                else
-                {
-                    PrintHelp("score new <name>");
-                    return;
-                }
+                { "f|force", b => data.ForceCreateNew = b != null }
+                // TODO(kai): bin/lib/gui?/etc.
+            };
+
+            var extra = opts.Parse(args);
+
+            if (extra.Count != 1)
+            {
+                PrintHelp("score new [options] <name>");
+                return;
             }
 
-            var projectName = args.Last();
+            var projectName = extra.Single();
             var projectDir = Path.GetFullPath(projectName);
 
             string message;
-            if (!CreateNewProject(out message, projectDir, projectName, forceCreate))
+            if (!CreateNewProject(out message, projectDir, projectName, data.ForceCreateNew))
             {
                 Console.WriteLine(message);
                 return;
             }
+        }
+
+        public struct Cmd_AddArgData
+        {
+            public string ProjectDir;
+            public string FileName;
+
+            public bool ForceCreateNew;
         }
 
         private static void Cmd_Add(string[] args)
         {
             if (args.Length == 0)
             {
-                PrintHelp("score add [options] <file_or_folder>");
+                PrintHelp("score add [-f|--force] <file_or_folder>");
                 return;
             }
 
-            string projectDir;
-            if (args.Length == 2)
-            {
-                try
-                {
-                    projectDir = Path.GetFullPath(args.Last());
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine("Could not find the path specified.");
-                    return;
-                }
-            }
-            else projectDir = Path.GetFullPath("./");
+            var data = new Cmd_AddArgData();
 
-            var fileName = args.First();
+            var opts = new OptionSet()
+            {
+                { "f|force", b => data.ForceCreateNew = b != null }
+                // TODO(kai): bin/lib/gui?/etc.
+            };
+
+            var extra = opts.Parse(args);
+
+            if (extra.Count != 1)
+            {
+                PrintHelp("score add [-f|--force] <file_or_folder>");
+                return;
+            }
+
+            data.ProjectDir = Path.GetFullPath("./");
+            data.FileName = extra.Single();
 
             string message;
-            if (!AddNewFile(out message, projectDir, fileName, false))
+            if (!AddNewFile(out message, data))
             {
                 Console.WriteLine(message);
                 return;
             }
         }
 
+        public struct Cmd_IncludeArgData
+        {
+            public string ProjectDir;
+            public string FileName;
+
+            public bool Recursive;
+        }
+
         private static void Cmd_Include(string[] args)
         {
             if (args.Length == 0)
             {
-                PrintHelp("score include [options] <file_or_folder>");
+                PrintHelp("score include [-r|--recurse] <file_or_folder>");
                 return;
             }
 
-            string projectDir;
-            if (args.Length == 2)
-            {
-                try
-                {
-                    projectDir = Path.GetFullPath(args.Last());
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine("Could not find the path specified.");
-                    return;
-                }
-            }
-            else projectDir = Path.GetFullPath("./");
+            var data = new Cmd_IncludeArgData();
 
-            var fileName = args.First();
+            var opts = new OptionSet()
+            {
+                { "r|recurse", b => data.Recursive = b != null }
+                // TODO(kai): bin/lib/gui?/etc.
+            };
+
+            var extra = opts.Parse(args);
+
+            if (extra.Count != 1)
+            {
+                PrintHelp("score include [-r|--recurse] <file_or_folder>");
+                return;
+            }
+
+            data.ProjectDir = Path.GetFullPath("./");
+            data.FileName = extra.Single();
 
             string message;
-            if (!IncludeFile(out message, projectDir, fileName))
+            if (!IncludeFile(out message, data))
             {
                 Console.WriteLine(message);
                 return;

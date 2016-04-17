@@ -1,5 +1,6 @@
 ﻿namespace ScoreC.Compile.SyntaxTree
 {
+    using Analysis;
     using Source;
 
     class Binding
@@ -9,13 +10,18 @@
 
         public TypeInfo DeclaredTypeInfo;
         public bool ShouldBeTypeInferred => DeclaredTypeInfo == null;
+        public Span TypeStart;
+
+        public Symbol TypeSymbol;
+        public TypeInfo TypeInfo => TypeSymbol.TypeInfo;
 
         public NodeExpression Value;
 
-        public Binding(Token tkName, TypeInfo declaredType, NodeExpression value)
+        public Binding(Token tkName, TypeInfo declaredType, Span typeStart, NodeExpression value)
         {
             TkName = tkName;
             DeclaredTypeInfo = declaredType;
+            TypeStart = typeStart;
             Value = value;
         }
 

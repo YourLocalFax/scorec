@@ -1,7 +1,13 @@
 
+proc test(v : r32) {
+}
+
 proc main() {
    let v_stack0 : vec2
-   v_stack0.x = 1
+   v_stack0.x = 10
+   v_stack0.y = v_stack0.x + 1
+
+   test(v_stack0.x)
 
    /*
    TODO

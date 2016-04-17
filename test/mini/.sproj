@@ -1,6 +1,8 @@
 <project name="mini" source_dir="src">
   <include>
-    <file name="main.score" />
     <file name="vec2.score" />
+    <file name="test\test1\test2\test3.score" />
+    <file name="main.score" />
+    <file name="test\test0.score" />
   </include>
 </project>

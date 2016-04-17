@@ -135,7 +135,7 @@ namespace ScoreC
             while (mapsToParse.Count > 0)
             {
                 var file = mapsToParse.Dequeue();
-                Log.AddInfo(null, "Parsing {0}", file.FullPath);
+                //Log.AddInfo(null, "Parsing {0}", file.FullPath);
 
                 Lexer.Lex(Log, file);
                 if (Log.HasErrors)

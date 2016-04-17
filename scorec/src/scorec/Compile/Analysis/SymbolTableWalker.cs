@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -22,12 +23,21 @@ namespace ScoreC.Compile.Analysis
             {
 #if DEBUG
                 Debug.Assert(!IsFinished, "no symbols to walk, " + symbol.Name);
-#endif
                 var current = Scope.Symbols[Steps];
-#if DEBUG
                 Debug.Assert(current == symbol, "failed to walk a symbol, " + symbol.Name);
 #endif
                 Steps++;
+            }
+
+            public Symbol GetLatestSymbolByName(string ident)
+            {
+                for (int i = Steps - 1; i >= 0; i--)
+                {
+                    var symbol = Scope.Symbols[i];
+                    if (symbol.Name == ident)
+                        return symbol;
+                }
+                return null;
             }
         }
 
@@ -48,6 +58,17 @@ namespace ScoreC.Compile.Analysis
 #endif
             scouts.Clear();
             scouts.Add(new Scout(scope));
+        }
+
+        public Symbol FindNearestSymbolByName(string ident)
+        {
+            for (int i = scouts.Count - 1; i >= 0; i--)
+            {
+                var symbol = scouts[i].GetLatestSymbolByName(ident);
+                if (symbol != null)
+                    return symbol;
+            }
+            return SymbolTable.FindGlobal(ident);
         }
 
         public void StepIntoScope()

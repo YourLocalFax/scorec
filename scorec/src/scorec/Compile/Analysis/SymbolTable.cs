@@ -14,7 +14,7 @@ namespace ScoreC.Compile.Analysis
         Local = 1,
         Scope = 2,
         Struct = 4,
-        Procedure = 5,
+        Procedure = 8,
     }
 
     class Symbol
@@ -24,11 +24,11 @@ namespace ScoreC.Compile.Analysis
         public TypeInfo TypeInfo;
         public SymbolKind Kind;
 
-        public bool IsGlobal => (Kind & SymbolKind.Local) == 0;
+        public bool IsGlobal => !Kind.HasFlag(SymbolKind.Local);
 
-        public bool IsStruct => (Kind & SymbolKind.Struct) != 0;
-        public bool IsProcedure => (Kind & SymbolKind.Procedure) != 0;
-        public bool IsScope => (Kind & SymbolKind.Scope) != 0;
+        public bool IsStruct => Kind.HasFlag(SymbolKind.Struct);
+        public bool IsProcedure => Kind.HasFlag(SymbolKind.Procedure);
+        public bool IsScope => Kind.HasFlag(SymbolKind.Scope);
 
         public Symbol(Span location, string name, TypeInfo typeInfo, SymbolKind kind)
         {
