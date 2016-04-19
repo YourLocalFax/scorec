@@ -6,7 +6,7 @@
     class Binding
     {
         public Token TkName;
-        public string Name => TkName.Identifier;
+        public string Name => TkName?.Identifier;
 
         public TypeInfo DeclaredTypeInfo;
         public bool ShouldBeTypeInferred => DeclaredTypeInfo == null;

@@ -738,6 +738,7 @@ namespace ScoreC.Compile.SyntaxTree
 
                         var names = new List<Token>();
                         var types = new List<TypeInfo>();
+                        var typeStarts = new List<Span>();
 
                         // FIXME(kai): !!!!!!!! I think this needs to be a bit better plz help
 
@@ -753,6 +754,8 @@ namespace ScoreC.Compile.SyntaxTree
                             else tkName = null;
                             names.Add(tkName);
 
+                            var typeStart = EoSOrCurrentSpan();
+                            typeStarts.Add(typeStart);
                             var type = ParseTypeInfo(out handleFailureMessage);
                             types.Add(type);
 
@@ -808,13 +811,14 @@ namespace ScoreC.Compile.SyntaxTree
                         var count = types.Count;
                         for (int i = 0; i < count; i++)
                             // TODO(kai): When we introduce default parameters, change 'null' to an actually parsed value.
-                            parameters.Add(new Binding(names[i], types[i], null));
+                            parameters.Add(new Binding(names[i], types[i], typeStarts[i], null));
 
                         if (Check(TokenKind.GoesTo))
                         {
                             var tkArrow = Current;
                             Advance(); // `->`
                                        // TODO(kai): eventually named returns will be a thing, check those here.
+                            var returnTypeStart = EoSOrCurrentSpan();
                             var returnType = ParseTypeInfo(out handleFailureMessage);
                             if (returnType == null)
                             {
@@ -830,14 +834,14 @@ namespace ScoreC.Compile.SyntaxTree
                             // TODO(kai): support multiple return values
 
                             var returns = new List<Binding>();
-                            returns.Add(new Binding(null, returnType, null));
+                            returns.Add(new Binding(null, returnType, returnTypeStart, null));
 
                             return new ProcedureTypeInfo(tkOpenBracket, tkCloseBracket, tkArrow, parameters, returns);
                         }
                         else
                         {
                             var returns = new List<Binding>();
-                            returns.Add(new Binding(null, BuiltinTypeInfo.Get(BuiltinType.Void), null));
+                            returns.Add(new Binding(null, BuiltinTypeInfo.Get(BuiltinType.Void), Previous.Span, null));
 
                             return new ProcedureTypeInfo(tkOpenBracket, tkCloseBracket, null, parameters, returns);
                         }
@@ -890,11 +894,14 @@ namespace ScoreC.Compile.SyntaxTree
             var tkIdentifier = Current;
             Advance();
 
+            var typeInfoStart = default(Span);
+
             TypeInfo typeInfo = null;
             if (Check(TokenKind.Colon))
             {
                 Advance();
 
+                typeInfoStart = EoSOrCurrentSpan();
                 typeInfo = ParseTypeInfo(out handleFailureMessage);
                 if (typeInfo == null)
                 {
@@ -928,7 +935,7 @@ namespace ScoreC.Compile.SyntaxTree
                 }
             }
 
-            return new NodeBindingDeclaration(start, bindingKind, new Binding(tkIdentifier, typeInfo, value));
+            return new NodeBindingDeclaration(start, bindingKind, new Binding(tkIdentifier, typeInfo, typeInfoStart, value));
         }
 
         /// <summary>
@@ -1143,6 +1150,7 @@ namespace ScoreC.Compile.SyntaxTree
                         }
                     }
 
+                    var typeInfoStart = EoSOrCurrentSpan();
                     var type = ParseTypeInfo(out handleFailureMessage);
                     if (type == null && !handleFailureMessage)
                     {
@@ -1152,7 +1160,7 @@ namespace ScoreC.Compile.SyntaxTree
                     }
 
                     // TODO(kai): binding initializers plz
-                    parameters.Add(new Binding(tkName, type, null));
+                    parameters.Add(new Binding(tkName, type, typeInfoStart, null));
 
                     if (Check(TokenKind.Comma))
                     {
@@ -1215,6 +1223,7 @@ namespace ScoreC.Compile.SyntaxTree
                         }
                     }
 
+                    var typeInfoStart = EoSOrCurrentSpan();
                     var type = ParseTypeInfo(out handleFailureMessage);
                     if (type == null && !handleFailureMessage)
                     {
@@ -1224,7 +1233,7 @@ namespace ScoreC.Compile.SyntaxTree
                     }
 
                     // TODO(kai): binding initializers plz
-                    fields.Add(new Binding(tkName, type, null));
+                    fields.Add(new Binding(tkName, type, typeInfoStart, null));
                 }
 
                 if (!Expect(TokenKind.CloseCurlyBracket))

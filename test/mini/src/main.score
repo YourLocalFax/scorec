@@ -1,5 +1,8 @@
 
+//extern proc printf(format : *s8, ...)
+
 proc test(v : r32) {
+   printf("%f", v)
 }
 
 proc main() {

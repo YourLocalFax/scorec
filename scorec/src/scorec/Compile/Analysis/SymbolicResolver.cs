@@ -2,6 +2,8 @@
 
 namespace ScoreC.Compile.Analysis
 {
+    using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using Logging;
@@ -43,6 +45,52 @@ namespace ScoreC.Compile.Analysis
                 file.Ast.Accept(this);
             }
             while (!isFinished);
+        }
+
+        private TypeInfo ResolveType(Span start, TypeInfo typeInfo, out Symbol symbol)
+        {
+            symbol = null;
+
+            if (typeInfo is QualifiedTypeInfo)
+            {
+                var qualifiedTypeInfo = typeInfo as QualifiedTypeInfo;
+                var path = qualifiedTypeInfo.Path;
+
+                Debug.Assert(path.Count > 0, "Qualified type infos must contain at least one path node!");
+
+                var root = path[0];
+                Debug.Assert(root != null, "Need root!");
+
+                // FIXME(kai): When we do namespacing, there can be multiple nodes to the path!!!
+                if (path.Count > 1)
+                    log.AddError(root.Span, "Currently, qualified type paths must only be a single identifier.");
+                else if (!root.IsIdentifier)
+                    log.AddError(root.Span, "Qualified type path must begin with an identifier.");
+                else
+                {
+                    var refersTo = GetReferencedSymbol(root.Identifier);
+                    if (refersTo == null)
+                        log.AddError(root.Span, "Failed to determine what `{0}` refers to.", root.Identifier);
+                    else
+                    {
+                        // FIXME(kai): Other things can be types, so include those when they exist!
+                        if (refersTo.IsStruct)
+                        {
+                            symbol = refersTo;
+#if DEBUG_REFERS_TO
+                            System.Console.WriteLine("`" + qualifiedTypeInfo + "` refers to type `" + symbol + "`");
+#endif
+                            return symbol.TypeInfo;
+                        }
+                        else log.AddError(root.Span, "`{0}` does not refer to a type!", root.Identifier);
+                    }
+                }
+            }
+            else if (typeInfo is BuiltinTypeInfo)
+                return typeInfo;
+
+            log.AddError(start, "Failed to resolve type.");
+            return null;
         }
 
         private Symbol GetReferencedSymbol(string ident)
@@ -183,52 +231,6 @@ namespace ScoreC.Compile.Analysis
             node.Value.Accept(this);
         }
 
-        private TypeInfo ResolveType(Span start, TypeInfo typeInfo, out Symbol symbol)
-        {
-            symbol = null;
-
-            if (typeInfo is QualifiedTypeInfo)
-            {
-                var qualifiedTypeInfo = typeInfo as QualifiedTypeInfo;
-                var path = qualifiedTypeInfo.Path;
-
-                Debug.Assert(path.Count > 0, "Qualified type infos must contain at least one path node!");
-
-                var root = path[0];
-                Debug.Assert(root != null, "Need root!");
-
-                // FIXME(kai): When we do namespacing, there can be multiple nodes to the path!!!
-                if (path.Count > 1)
-                    log.AddError(root.Span, "Currently, qualified type paths must only be a single identifier.");
-                else if (!root.IsIdentifier)
-                    log.AddError(root.Span, "Qualified type path must begin with an identifier.");
-                else
-                {
-                    var refersTo = GetReferencedSymbol(root.Identifier);
-                    if (refersTo == null)
-                        log.AddError(root.Span, "Failed to determine what `{0}` refers to.", root.Identifier);
-                    else
-                    {
-                        // FIXME(kai): Other things can be types, so include those when they exist!
-                        if (refersTo.IsStruct)
-                        {
-                            symbol = refersTo;
-#if DEBUG_REFERS_TO
-                            System.Console.WriteLine("`" + qualifiedTypeInfo + "` refers to type `" + symbol + "`");
-#endif
-                            return symbol.TypeInfo;
-                        }
-                        else log.AddError(root.Span, "`{0}` does not refer to a type!", root.Identifier);
-                    }
-                }
-            }
-            else if (typeInfo is BuiltinTypeInfo)
-                return typeInfo;
-
-            log.AddError(start, "Failed to resolve type.");
-            return null;
-        }
-
         public void Visit(NodeBindingDeclaration node)
         {
             var symbol = node.Symbol;
@@ -239,7 +241,13 @@ namespace ScoreC.Compile.Analysis
                 var typeInfo = node.Binding.DeclaredTypeInfo;
 
                 var type = ResolveType(node.Binding.TypeStart, typeInfo, out node.Binding.TypeSymbol);
-                node.Symbol.TypeInfo = node.Binding.TypeSymbol.TypeInfo = type;
+                if (type != null)
+                {
+                    node.Symbol.TypeInfo = node.Binding.TypeSymbol.TypeInfo = type;
+#if DEBUG_REFERS_TO
+                    System.Console.WriteLine("Updated type of binding symbol `" + node.Symbol.Name + "` to `" + type + "`");
+#endif
+                }
             }
 
             // NOTE(kai): type checking happens after symbolic resolution
@@ -253,6 +261,31 @@ namespace ScoreC.Compile.Analysis
         public void Visit(NodeProcedureDeclaration node)
         {
             // FIXME(kai): resolve type
+
+            var procTypeInfo = node.TypeInfo;
+
+            // FIXME(kai): Make this a local function when you can <3
+            Action<List<Binding>, bool> ProcessParamList = (list, isParam) =>
+            {
+                foreach (var binding in list)
+                {
+                    if (binding.ShouldBeTypeInferred)
+                        continue;
+
+                    var type = ResolveType(binding.TypeStart, binding.DeclaredTypeInfo, out binding.TypeSymbol);
+#if DEBUG_REFERS_TO
+                    if (type != null)
+                    {
+                        var kind = isParam ? "parameter" : "return";
+                        var name = binding.Name != null ? " `" + binding.Name + "`" : "";
+                        Console.WriteLine("Updated type of " + kind + name + " in procedure `" + node.Symbol.Name + "` to `" + type + "`");
+                    }
+#endif
+                }
+            };
+
+            ProcessParamList(node.TypeInfo.Parameters, true);
+            ProcessParamList(node.TypeInfo.Returns, false);
 
             if (!node.IsGlobal)
                 walker.WalkSymbol(node.Symbol);

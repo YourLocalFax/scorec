@@ -29,7 +29,7 @@
             node.Symbol = builder.AddSymbol(node.TkName.Span, node.Name, node.TypeInfo, SymbolKind.Procedure);
 
             node.Body.Value.InTailPosition = true;
-            if (node.Returns)
+            if (node.ReturnsAValue)
                 node.Body.Value.IsResultRequired = true;
             else
             {

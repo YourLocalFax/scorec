@@ -34,7 +34,7 @@
         /// </summary>
         public ProcedureBody Body;
 
-        public bool Returns => (TypeInfo.Returns?.Count ?? 0) > 0;
+        public bool ReturnsAValue => (TypeInfo.Returns?.Count ?? 0) > 0;
 
         public bool IsGlobal;
         public Symbol Symbol;
